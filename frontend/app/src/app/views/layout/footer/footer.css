@@ -1,0 +1,91 @@
+.padel-footer {
+  width: 100%;
+}
+
+.padel-footer-top {
+  padding: 28px 20px;
+  background: #1f2424;
+  color: #fff;
+  display: grid;
+  gap: 22px;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.brand-icon {
+  font-size: 34px;
+  width: 34px;
+  height: 34px;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.brand-tagline {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 18px;
+}
+
+.col-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  opacity: 0.95;
+}
+
+.links a {
+  display: block;
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  margin: 8px 0;
+  opacity: 0.9;
+}
+
+.links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.social {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.social a {
+  color: #fff;
+  opacity: 0.9;
+}
+
+.social a:hover {
+  opacity: 1;
+}
+
+.padel-subfooter {
+  height: 56px;
+}
+
+.spacer { flex: 1; }
+
+.small {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .padel-footer-top { padding: 22px 16px; }
+  .links { grid-template-columns: 1fr; }
+}

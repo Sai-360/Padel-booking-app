@@ -1,0 +1,8 @@
+.app-sidenav {
+  width: 260px;
+  max-width: 85vw;
+}
+
+.app-container {
+  height: 100vh;
+}
