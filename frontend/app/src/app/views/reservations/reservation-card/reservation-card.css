@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+mat-card {
+  border-radius: 20px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+mat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+mat-card-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+mat-card-subtitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+mat-card-content {
+  margin-top: 16px;
+}
+
+.reservation-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.label {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.value {
+  font-weight: 500;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  width: fit-content;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.price {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+mat-card-actions {
+  padding: 12px 8px 8px;
+}

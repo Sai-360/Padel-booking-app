@@ -1,1 +1,90 @@
-<p>reservation-card works!</p>
+<mat-card>
+
+  <mat-card-header>
+    <mat-card-title>Reservation</mat-card-title>
+    <mat-card-subtitle>Padel Court</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+
+    <div class="reservation-info">
+
+      <!-- DATE -->
+      <div class="info-row">
+        <span class="label">Date</span>
+        <span class="value">
+          {{ reservations().date }}
+        </span>
+      </div>
+
+      <!-- TIME -->
+      <div class="info-row">
+        <span class="label">Time</span>
+        <span class="value">
+          {{ reservations().time }}
+        </span>
+      </div>
+
+      <!-- TYPE -->
+      <div class="info-row">
+        <span class="label">Type</span>
+
+        <span class="type-badge">
+          {{ reservations().type }}
+        </span>
+      </div>
+
+      <!-- PLAYERS -->
+      <div class="info-row">
+        <span class="label">Players</span>
+
+        <span class="value">
+          {{ reservations().players.length }}/4
+        </span>
+      </div>
+
+      <!-- PRICE -->
+      <div class="info-row">
+        <span class="label">Price</span>
+
+        <span class="value price">
+          {{ reservations().price }} €
+        </span>
+      </div>
+
+    </div>
+
+  </mat-card-content>
+
+  <mat-card-actions>
+
+    <!-- PUBLIC MATCH AVAILABLE -->
+    @if (!isFull() && isPublic()) {
+
+      <button mat-flat-button (click)="join()">
+        Join
+      </button>
+
+    }
+
+    <!-- FULL MATCH -->
+    @if (isFull()) {
+
+      <button mat-flat-button disabled>
+        Full
+      </button>
+
+    }
+
+    <!-- PRIVATE MATCH -->
+    @if (!isPublic()) {
+
+      <button mat-flat-button disabled>
+        Private Match
+      </button>
+
+    }
+
+  </mat-card-actions>
+
+</mat-card>

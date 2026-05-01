@@ -1,0 +1,18 @@
+<div class="reservation-list-page">
+  <div class="page-header">
+    <div>
+      <h1>Book a Court</h1>
+      <p>Browse available matches or create your own reservation.</p>
+    </div>
+
+    <button mat-raised-button color="primary" routerLink="/book/create">
+      Créer une réservation
+    </button>
+  </div>
+
+  <div class="reservation-list">
+    @for (reservation of reservations; track reservation.id) {
+      <app-reservation-card [reservations]="reservation"></app-reservation-card>
+    }
+  </div>
+</div>

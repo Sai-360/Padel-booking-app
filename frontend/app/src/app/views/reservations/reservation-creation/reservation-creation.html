@@ -1,0 +1,85 @@
+<div class="creation-page">
+
+  <div class="creation-header">
+    <h1>Book a Court</h1>
+    <p>Create your match or reserve a court in seconds.</p>
+  </div>
+
+  <mat-card class="creation-card">
+    <mat-card-content>
+
+      <form [formGroup]="form" (ngSubmit)="addReservation()" class="reservation-form">
+
+        <div class="form-grid">
+
+          <!-- SITE -->
+          <mat-form-field appearance="outline">
+            <mat-label>Site</mat-label>
+            <input matInput formControlName="siteId" placeholder="e.g. Site 1">
+
+            @if (form.get('siteId')?.hasError('required') && form.get('siteId')?.touched) {
+              <mat-error>Site is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- COURT -->
+          <mat-form-field appearance="outline">
+            <mat-label>Court</mat-label>
+            <input matInput formControlName="courtId" placeholder="e.g. Court 2">
+
+            @if (form.get('courtId')?.hasError('required') && form.get('courtId')?.touched) {
+              <mat-error>Court is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- DATE -->
+          <mat-form-field appearance="outline">
+            <mat-label>Date</mat-label>
+            <input matInput type="date" formControlName="date">
+
+            @if (form.get('date')?.hasError('required') && form.get('date')?.touched) {
+              <mat-error>Date is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- TIME -->
+          <mat-form-field appearance="outline">
+            <mat-label>Time</mat-label>
+            <input matInput type="time" formControlName="time">
+
+            @if (form.get('time')?.hasError('required') && form.get('time')?.touched) {
+              <mat-error>Time is required</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- TYPE -->
+          <mat-form-field appearance="outline">
+            <mat-label>Match Type</mat-label>
+            <mat-select formControlName="type">
+              <mat-option value="PUBLIC">Public</mat-option>
+              <mat-option value="PRIVATE">Private</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- PRICE -->
+          <mat-form-field appearance="outline">
+            <mat-label>Price (€)</mat-label>
+            <input matInput type="number" formControlName="price">
+            <mat-hint>Total reservation price</mat-hint>
+          </mat-form-field>
+
+        </div>
+
+        <!-- BUTTON -->
+        <div class="form-actions">
+          <button mat-raised-button color="primary" type="submit" class="submit-btn">
+            Create Reservation
+          </button>
+        </div>
+
+      </form>
+
+    </mat-card-content>
+  </mat-card>
+
+</div>
