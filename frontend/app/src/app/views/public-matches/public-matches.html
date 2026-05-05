@@ -1,0 +1,14 @@
+<div class="public-matches-page">
+
+  <div class="page-header">
+    <h1>Public Matches</h1>
+    <p>Join an available public match.</p>
+  </div>
+
+  <div class="reservation-list">
+    @for (reservation of reservations; track reservation.id) {
+      <app-reservation-card [reservations]="reservation"></app-reservation-card>
+    }
+  </div>
+
+</div>

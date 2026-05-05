@@ -96,4 +96,12 @@ export class ReservationsService {
 
     reservation.players.push(player);
   }
+
+
+  getMyReservations(playerId: string): Reservation[] {
+    return this.reservations.filter(reservation =>
+      reservation.organizerId === playerId ||
+      reservation.players.some(player => player.id === playerId)
+    );
+  }
 }

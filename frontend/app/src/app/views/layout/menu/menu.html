@@ -1,6 +1,6 @@
 <a routerLink="home"  (click)="layoutService.toggleMenuWhenClick()" mat-list-item>Home</a>
 <a routerLink="book" (click)="layoutService.toggleMenuWhenClick()" mat-list-item>Book a Court</a>
-<a routerLink="public-matches" mat-list-item>Public Matches</a>
+<a routerLink="public-matches" (click)="layoutService.toggleMenuWhenClick()" mat-list-item>Public Matches</a>
 <a routerLink="my-reservations" mat-list-item>My Reservations</a>
 <a routerLink="profile" mat-list-item>My Profile</a>
 

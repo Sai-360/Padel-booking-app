@@ -2,7 +2,7 @@
 
   <div class="creation-header">
     <h1>Book a Court</h1>
-    <p>Create your match or reserve a court in seconds.</p>
+    <p>Create your match by choosing a site, a court and an available time slot.</p>
   </div>
 
   <mat-card class="creation-card">
@@ -15,7 +15,11 @@
           <!-- SITE -->
           <mat-form-field appearance="outline">
             <mat-label>Site</mat-label>
-            <input matInput formControlName="siteId" placeholder="e.g. Site 1">
+            <mat-select formControlName="siteId">
+              <mat-option value="site-1">Site 1</mat-option>
+              <mat-option value="site-2">Site 2</mat-option>
+              <mat-option value="site-3">Site 3</mat-option>
+            </mat-select>
 
             @if (form.get('siteId')?.hasError('required') && form.get('siteId')?.touched) {
               <mat-error>Site is required</mat-error>
@@ -25,7 +29,11 @@
           <!-- COURT -->
           <mat-form-field appearance="outline">
             <mat-label>Court</mat-label>
-            <input matInput formControlName="courtId" placeholder="e.g. Court 2">
+            <mat-select formControlName="courtId">
+              <mat-option value="court-1">Court 1</mat-option>
+              <mat-option value="court-2">Court 2</mat-option>
+              <mat-option value="court-3">Court 3</mat-option>
+            </mat-select>
 
             @if (form.get('courtId')?.hasError('required') && form.get('courtId')?.touched) {
               <mat-error>Court is required</mat-error>
@@ -42,13 +50,20 @@
             }
           </mat-form-field>
 
-          <!-- TIME -->
+          <!-- TIME SLOT -->
           <mat-form-field appearance="outline">
-            <mat-label>Time</mat-label>
-            <input matInput type="time" formControlName="time">
+            <mat-label>Time Slot</mat-label>
+            <mat-select formControlName="time">
+              <mat-option value="09:00">09:00 - 10:30</mat-option>
+              <mat-option value="10:45">10:45 - 12:15</mat-option>
+              <mat-option value="12:30">12:30 - 14:00</mat-option>
+              <mat-option value="14:15">14:15 - 15:45</mat-option>
+              <mat-option value="16:00">16:00 - 17:30</mat-option>
+              <mat-option value="17:45">17:45 - 19:15</mat-option>
+            </mat-select>
 
             @if (form.get('time')?.hasError('required') && form.get('time')?.touched) {
-              <mat-error>Time is required</mat-error>
+              <mat-error>Time slot is required</mat-error>
             }
           </mat-form-field>
 
@@ -64,10 +79,15 @@
           <!-- PRICE -->
           <mat-form-field appearance="outline">
             <mat-label>Price (€)</mat-label>
-            <input matInput type="number" formControlName="price">
-            <mat-hint>Total reservation price</mat-hint>
+            <input matInput type="number" formControlName="price" readonly>
+            <mat-hint>Fixed total match price</mat-hint>
           </mat-form-field>
 
+        </div>
+
+        <div class="form-summary">
+          <span>Total price</span>
+          <strong>{{ form.get('price')?.value }} €</strong>
         </div>
 
         <!-- BUTTON -->
