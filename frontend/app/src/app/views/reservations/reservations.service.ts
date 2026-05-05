@@ -104,4 +104,5 @@ export class ReservationsService {
       reservation.players.some(player => player.id === playerId)
     );
   }
+
 }

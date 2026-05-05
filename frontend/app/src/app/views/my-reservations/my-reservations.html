@@ -1,1 +1,16 @@
-<p>my-reservations works!</p>
+<div class="my-reservations-page">
+
+  <div class="page-header">
+    <h1>My Reservations</h1>
+    <p>Reservations you created or joined.</p>
+  </div>
+
+  <div class="reservation-list">
+    @for (reservation of reservations; track reservation.id) {
+      <app-reservation-card [reservations]="reservation"></app-reservation-card>
+    } @empty {
+      <p class="empty-message">You have no reservations yet.</p>
+    }
+  </div>
+
+</div>
