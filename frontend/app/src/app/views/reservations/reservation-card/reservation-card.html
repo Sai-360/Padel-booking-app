@@ -28,7 +28,6 @@
       <!-- TYPE -->
       <div class="info-row">
         <span class="label">Type</span>
-
         <span class="type-badge">
           {{ reservations().type }}
         </span>
@@ -37,16 +36,30 @@
       <!-- PLAYERS -->
       <div class="info-row">
         <span class="label">Players</span>
-
         <span class="value">
           {{ reservations().players.length }}/4
+        </span>
+      </div>
+
+      <!-- PAYMENT -->
+      <div class="info-row">
+        <span class="label">Payment</span>
+        <span class="value">
+          @if (isCurrentUserInReservation()) {
+            @if (isCurrentUserPaid()) {
+              Paid
+            } @else {
+              Not paid
+            }
+          } @else {
+            Not joined
+          }
         </span>
       </div>
 
       <!-- PRICE -->
       <div class="info-row">
         <span class="label">Price</span>
-
         <span class="value price">
           {{ reservations().price }} €
         </span>
@@ -59,30 +72,38 @@
   <mat-card-actions>
 
     <!-- PUBLIC MATCH AVAILABLE -->
-    @if (!isFull() && isPublic()) {
-
+    @if (canJoin()) {
       <button mat-flat-button (click)="join()">
         Join
       </button>
-
     }
 
-    <!-- FULL MATCH -->
-    @if (isFull()) {
+    <!-- JOINED BUT NOT PAID -->
+    @if (canPay()) {
+      <button mat-flat-button (click)="pay()">
+        Pay
+      </button>
+    }
 
+    <!-- JOINED AND PAID -->
+    @if (isCurrentUserInReservation() && isCurrentUserPaid()) {
+      <button mat-flat-button disabled>
+        Paid
+      </button>
+    }
+
+    <!-- FULL MATCH FOR OTHER USERS -->
+    @if (isFull() && !isCurrentUserInReservation()) {
       <button mat-flat-button disabled>
         Full
       </button>
-
     }
 
     <!-- PRIVATE MATCH -->
     @if (!isPublic()) {
-
       <button mat-flat-button disabled>
         Private Match
       </button>
-
     }
 
   </mat-card-actions>

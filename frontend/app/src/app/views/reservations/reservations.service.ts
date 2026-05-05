@@ -105,4 +105,16 @@ export class ReservationsService {
     );
   }
 
+  payReservation(reservationId: string, playerId: string): void {
+    const reservation = this.reservations.find(r => r.id === reservationId);
+
+    if (!reservation) return;
+
+    const player = reservation.players.find(p => p.id === playerId);
+
+    if (!player) return;
+
+    player.paid = true;
+  }
+
 }

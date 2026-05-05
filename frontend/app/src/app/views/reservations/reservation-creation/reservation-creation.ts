@@ -7,9 +7,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { Reservation } from '../../../model/Reservations';
 import { uuid } from '../../../shared/uuid';
 import { ReservationsService } from '../reservations.service';
-import {ReservationCard} from '../reservation-card/reservation-card';
-import {MatCard, MatCardContent} from '@angular/material/card';
-
+import { ReservationCard } from '../reservation-card/reservation-card';
+import { MatCard, MatCardContent } from '@angular/material/card';
+import { UserService } from '../../user/user.service';
 
 @Component({
   selector: 'app-reservation-creation',
@@ -32,7 +32,8 @@ import {MatCard, MatCardContent} from '@angular/material/card';
 })
 export class ReservationCreation {
 
-  reservationsService = inject(ReservationsService);
+  private reservationsService = inject(ReservationsService);
+  private userService = inject(UserService);
 
   form = new FormGroup({
     siteId: new FormControl<string>('', [Validators.required]),
@@ -65,6 +66,8 @@ export class ReservationCreation {
       return;
     }
 
+    const currentUser = this.userService.getCurrentUser();
+
     const reservation: Reservation = {
       id: uuid(),
       siteId: this.form.get('siteId')?.value!,
@@ -72,13 +75,21 @@ export class ReservationCreation {
       date: this.form.get('date')?.value!,
       time: this.form.get('time')?.value!,
       type: this.form.get('type')?.value!,
-      organizerId: 'player-1',
-      players: [],
+      organizerId: currentUser.id,
+      players: [
+        {
+          id: currentUser.id,
+          name: currentUser.name,
+          paid: false,
+          role: 'ORGANIZER'
+        }
+      ],
       price: this.form.get('price')?.value!,
       status: 'ACTIVE'
     };
 
     this.reservationsService.addReservation(reservation);
+
     this.form.reset({
       siteId: '',
       courtId: '',
@@ -88,6 +99,7 @@ export class ReservationCreation {
       price: 60
     });
   }
+
   get reservations() {
     return this.reservationsService.getPublicReservations();
   }

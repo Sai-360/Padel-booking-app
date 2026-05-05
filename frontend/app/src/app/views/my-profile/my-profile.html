@@ -1,0 +1,41 @@
+<div class="profile-page">
+
+  <div class="page-header">
+    <h1>My Profile</h1>
+    <p>Your member information and reservation status.</p>
+  </div>
+
+  <mat-card class="profile-card">
+    <mat-card-header>
+      <mat-card-title>{{ user.name }}</mat-card-title>
+      <mat-card-subtitle>{{ user.matricule }}</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="profile-info">
+
+        <div class="info-row">
+          <span class="label">Member Type</span>
+          <span class="value">{{ user.type }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Site</span>
+          <span class="value">{{ user.siteId || 'All sites' }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Unpaid Balance</span>
+          <span class="value">{{ user.unpaidBalance }} €</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Blocked Until</span>
+          <span class="value">{{ user.blockedUntil || 'Not blocked' }}</span>
+        </div>
+
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+</div>

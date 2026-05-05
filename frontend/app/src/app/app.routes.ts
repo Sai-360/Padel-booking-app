@@ -4,12 +4,14 @@ import {ReservationList} from './views/reservations/reservation-list/reservation
 import {ReservationCreation} from './views/reservations/reservation-creation/reservation-creation';
 import {PublicMatches} from './views/public-matches/public-matches';
 import {MyReservations} from './views/my-reservations/my-reservations';
+import {MyProfile} from './views/my-profile/my-profile';
 export const routes: Routes = [
 
 
 {path: 'home', component: Home},
   { path: 'book', component: ReservationCreation },
   { path: 'public-matches', component: PublicMatches },
-  { path: 'my-reservations', component: MyReservations }
+  { path: 'my-reservations', component: MyReservations },
+  { path: 'profile', component: MyProfile }
 
 ];
