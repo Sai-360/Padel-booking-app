@@ -99,8 +99,14 @@
       </button>
     }
 
+    @if (canManagePrivateMatch()) {
+      <button mat-flat-button>
+        Manage Players
+      </button>
+    }
+
     <!-- PRIVATE MATCH -->
-    @if (!isPublic()) {
+    @if (!isPublic() && !canManagePrivateMatch()) {
       <button mat-flat-button disabled>
         Private Match
       </button>

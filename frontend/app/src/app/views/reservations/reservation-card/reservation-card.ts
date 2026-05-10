@@ -68,4 +68,12 @@ export class ReservationCard {
 
     this.reservationsService.payReservation(this.reservations().id, currentUserId);
   }
+
+  isOrganizer(): boolean {
+    return this.reservations().organizerId === this.userService.getCurrentUserId();
+  }
+
+  canManagePrivateMatch(): boolean {
+    return !this.isPublic() && this.isOrganizer();
+  }
 }
