@@ -8,9 +8,10 @@ export class UserService {
 
   private readonly currentUser: Member = {
     id: 'player-current',
-    matricule: 'G0001',
-    name: 'Current Member',
-    type: 'GLOBAL',
+    matricule: 'S0001',
+    name: 'Site Member',
+    type: 'SITE',
+    siteId: 'site-1',
     unpaidBalance: 0
   };
 

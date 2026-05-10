@@ -86,3 +86,11 @@
 .form-summary strong {
   font-size: 1.2rem;
 }
+
+.booking-error {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(211, 47, 47, 0.1);
+  color: #d32f2f;
+  font-weight: 600;
+}

@@ -35,6 +35,8 @@ export class ReservationCreation {
   private reservationsService = inject(ReservationsService);
   private userService = inject(UserService);
 
+  bookingError = '';
+
   form = new FormGroup({
     siteId: new FormControl<string>('', [Validators.required]),
     courtId: new FormControl<string>('', [Validators.required]),
@@ -61,8 +63,14 @@ export class ReservationCreation {
   }
 
   addReservation() {
+    this.bookingError = '';
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+
+    if (!this.canCurrentUserBook()) {
       return;
     }
 
@@ -98,6 +106,71 @@ export class ReservationCreation {
       type: 'PUBLIC',
       price: 60
     });
+  }
+
+  private canCurrentUserBook(): boolean {
+    const currentUser = this.userService.getCurrentUser();
+    const selectedDateValue = this.form.get('date')?.value;
+    const selectedSiteId = this.form.get('siteId')?.value;
+
+    if (!selectedDateValue) {
+      this.bookingError = 'Please select a reservation date.';
+      return false;
+    }
+
+    const daysBeforeMatch = this.getDaysBetweenTodayAnd(selectedDateValue);
+
+    if (daysBeforeMatch < 0) {
+      this.bookingError = 'You cannot book a court in the past.';
+      return false;
+    }
+
+    if (currentUser.type === 'GLOBAL') {
+      if (daysBeforeMatch > 21) {
+        this.bookingError = 'Global members can only book up to 3 weeks before the match.';
+        return false;
+      }
+
+      return true;
+    }
+
+    if (currentUser.type === 'SITE') {
+      if (daysBeforeMatch > 14) {
+        this.bookingError = 'Site members can only book up to 2 weeks before the match.';
+        return false;
+      }
+
+      if (selectedSiteId !== currentUser.siteId) {
+        this.bookingError = 'Site members can only book on their own site.';
+        return false;
+      }
+
+      return true;
+    }
+
+    if (currentUser.type === 'FREE') {
+      if (daysBeforeMatch > 5) {
+        this.bookingError = 'Free members can only book up to 5 days before the match.';
+        return false;
+      }
+
+      return true;
+    }
+
+    this.bookingError = 'Unknown member type.';
+    return false;
+  }
+
+  private getDaysBetweenTodayAnd(dateValue: string): number {
+    const today = new Date();
+    const selectedDate = new Date(dateValue);
+
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    const diffInMs = selectedDate.getTime() - today.getTime();
+
+    return Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
   }
 
   get reservations() {

@@ -89,7 +89,11 @@
           <span>Total price</span>
           <strong>{{ form.get('price')?.value }} €</strong>
         </div>
-
+        @if (bookingError) {
+          <div class="booking-error">
+            {{ bookingError }}
+          </div>
+        }
         <!-- BUTTON -->
         <div class="form-actions">
           <button mat-raised-button color="primary" type="submit" class="submit-btn">
