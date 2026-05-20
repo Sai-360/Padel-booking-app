@@ -1,0 +1,36 @@
+GET http://localhost:8080/courts
+Content-Type: application/json
+
+###
+
+POST http://localhost:8080/courts
+Content-Type: application/json
+
+{
+  "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "name": "Court 1",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "active": true
+}
+
+###
+
+POST http://localhost:8080/courts
+Content-Type: application/json
+
+{
+  "id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+  "name": "Court 2",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "active": true
+}
+
+###
+
+GET http://localhost:8080/courts/site/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Content-Type: application/json
+
+###
+
+GET http://localhost:8080/courts/cccccccc-cccc-cccc-cccc-cccccccccccc
+Content-Type: application/json
