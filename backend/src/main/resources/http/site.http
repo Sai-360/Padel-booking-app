@@ -1,0 +1,33 @@
+GET http://localhost:8080/sites
+Content-Type: application/json
+
+###
+
+POST http://localhost:8080/sites
+Content-Type: application/json
+
+{
+  "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "name": "Padel Brussels",
+  "location": "Brussels",
+  "openingTime": "08:00:00",
+  "closingTime": "22:00:00"
+}
+
+###
+
+POST http://localhost:8080/sites
+Content-Type: application/json
+
+{
+  "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "name": "Padel Namur",
+  "location": "Namur",
+  "openingTime": "09:00:00",
+  "closingTime": "21:00:00"
+}
+
+###
+
+GET http://localhost:8080/sites/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Content-Type: application/json
