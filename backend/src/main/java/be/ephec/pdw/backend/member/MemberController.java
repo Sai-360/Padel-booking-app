@@ -23,4 +23,9 @@ public class MemberController {
     public MemberDTO getMemberByMatricule(@PathVariable String matricule) {
         return memberService.getMemberByMatricule(matricule);
     }
+
+    @PostMapping
+    public MemberDTO createMember(@RequestBody MemberDTO memberDTO) {
+        return memberService.createMember(memberDTO);
+    }
 }

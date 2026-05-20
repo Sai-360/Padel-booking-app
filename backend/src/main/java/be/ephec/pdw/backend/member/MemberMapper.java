@@ -16,4 +16,16 @@ public class MemberMapper {
                 member.getBlockedUntil()
         );
     }
+
+    public Member toEntity(MemberDTO memberDTO) {
+        return Member.builder()
+                .id(memberDTO.id())
+                .matricule(memberDTO.matricule())
+                .name(memberDTO.name())
+                .type(memberDTO.type())
+                .siteId(memberDTO.siteId())
+                .unpaidBalance(memberDTO.unpaidBalance())
+                .blockedUntil(memberDTO.blockedUntil())
+                .build();
+    }
 }

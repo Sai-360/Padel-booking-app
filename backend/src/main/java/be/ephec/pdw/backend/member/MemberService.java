@@ -27,4 +27,11 @@ public class MemberService {
                 .map(memberMapper::toDTO)
                 .orElseThrow();
     }
+
+    public MemberDTO createMember(MemberDTO memberDTO) {
+        Member member = memberMapper.toEntity(memberDTO);
+        Member savedMember = memberRepository.save(member);
+
+        return memberMapper.toDTO(savedMember);
+    }
 }
