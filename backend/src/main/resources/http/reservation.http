@@ -1,0 +1,51 @@
+GET http://localhost:8080/reservations
+Content-Type: application/json
+
+###
+
+POST http://localhost:8080/reservations
+Content-Type: application/json
+
+{
+  "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "courtId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "organizerId": "11111111-1111-1111-1111-111111111111",
+  "reservationDate": "2026-06-15",
+  "startTime": "10:30:00",
+  "type": "PUBLIC",
+  "status": "ACTIVE",
+  "price": 60
+}
+
+###
+
+POST http://localhost:8080/reservations
+Content-Type: application/json
+
+{
+  "id": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "courtId": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+  "organizerId": "11111111-1111-1111-1111-111111111111",
+  "reservationDate": "2026-06-16",
+  "startTime": "12:00:00",
+  "type": "PRIVATE",
+  "status": "ACTIVE",
+  "price": 60
+}
+
+###
+
+GET http://localhost:8080/reservations/public
+Content-Type: application/json
+
+###
+
+GET http://localhost:8080/reservations/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee
+Content-Type: application/json
+
+###
+
+GET http://localhost:8080/reservations/organizer/11111111-1111-1111-1111-111111111111
+Content-Type: application/json
