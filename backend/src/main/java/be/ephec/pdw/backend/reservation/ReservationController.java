@@ -39,4 +39,20 @@ public class ReservationController {
     public ReservationDTO createReservation(@RequestBody ReservationDTO reservationDTO) {
         return reservationService.createReservation(reservationDTO);
     }
+
+    @PostMapping("/{id}/join")
+    public ParticipationDTO joinReservation(
+            @PathVariable UUID id,
+            @RequestBody ReservationActionRequest request
+    ) {
+        return reservationService.joinReservation(id, request.memberId());
+    }
+
+    @PostMapping("/{id}/pay")
+    public ParticipationDTO payReservation(
+            @PathVariable UUID id,
+            @RequestBody ReservationActionRequest request
+    ) {
+        return reservationService.payReservation(id, request.memberId());
+    }
 }

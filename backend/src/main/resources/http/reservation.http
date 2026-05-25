@@ -49,3 +49,23 @@ Content-Type: application/json
 
 GET http://localhost:8080/reservations/organizer/11111111-1111-1111-1111-111111111111
 Content-Type: application/json
+
+
+
+###
+
+POST http://localhost:8080/reservations/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/join
+Content-Type: application/json
+
+{
+  "memberId": "22222222-2222-2222-2222-222222222222"
+}
+
+###
+
+POST http://localhost:8080/reservations/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/pay
+Content-Type: application/json
+
+{
+  "memberId": "22222222-2222-2222-2222-222222222222"
+}
