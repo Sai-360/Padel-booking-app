@@ -6,6 +6,8 @@ import be.ephec.pdw.backend.member.Member;
 import be.ephec.pdw.backend.member.MemberRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,6 +62,11 @@ public class ReservationService {
     }
 
     public ReservationDTO createReservation(ReservationDTO reservationDTO) {
+        Member organizer = memberRepository.findById(reservationDTO.organizerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
+
+        validateReservationCreationRules(reservationDTO, organizer);
+
         Reservation reservation = reservationMapper.toEntity(reservationDTO);
         Reservation savedReservation = reservationRepository.save(reservation);
 
@@ -111,6 +118,50 @@ public class ReservationService {
         Participation savedParticipation = participationRepository.save(participation);
 
         return participationMapper.toDTO(savedParticipation);
+    }
+
+    private void validateReservationCreationRules(ReservationDTO reservationDTO, Member organizer) {
+        long daysBeforeMatch = getDaysBeforeMatch(reservationDTO.reservationDate());
+
+        if (daysBeforeMatch < 0) {
+            throw new BusinessException("You cannot create a reservation in the past.");
+        }
+
+        switch (organizer.getType()) {
+            case GLOBAL -> validateGlobalMemberBooking(daysBeforeMatch);
+            case SITE -> validateSiteMemberBooking(reservationDTO, organizer, daysBeforeMatch);
+            case FREE -> validateFreeMemberBooking(daysBeforeMatch);
+        }
+    }
+
+    private long getDaysBeforeMatch(LocalDate reservationDate) {
+        return ChronoUnit.DAYS.between(LocalDate.now(), reservationDate);
+    }
+
+    private void validateGlobalMemberBooking(long daysBeforeMatch) {
+        if (daysBeforeMatch > 21) {
+            throw new BusinessException("Global members can only book up to 3 weeks before the match.");
+        }
+    }
+
+    private void validateSiteMemberBooking(
+            ReservationDTO reservationDTO,
+            Member organizer,
+            long daysBeforeMatch
+    ) {
+        if (daysBeforeMatch > 14) {
+            throw new BusinessException("Site members can only book up to 2 weeks before the match.");
+        }
+
+        if (organizer.getSiteId() == null || !organizer.getSiteId().equals(reservationDTO.siteId().toString())) {
+            throw new BusinessException("Site members can only book on their own site.");
+        }
+    }
+
+    private void validateFreeMemberBooking(long daysBeforeMatch) {
+        if (daysBeforeMatch > 5) {
+            throw new BusinessException("Free members can only book up to 5 days before the match.");
+        }
     }
 
     private ReservationDTO toDTOWithParticipantsCount(Reservation reservation) {
