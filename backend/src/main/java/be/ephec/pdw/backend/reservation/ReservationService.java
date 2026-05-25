@@ -1,10 +1,10 @@
 package be.ephec.pdw.backend.reservation;
 
-import org.springframework.stereotype.Service;
-import be.ephec.pdw.backend.member.Member;
-import be.ephec.pdw.backend.member.MemberRepository;
 import be.ephec.pdw.backend.exception.BusinessException;
 import be.ephec.pdw.backend.exception.ResourceNotFoundException;
+import be.ephec.pdw.backend.member.Member;
+import be.ephec.pdw.backend.member.MemberRepository;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,27 +35,27 @@ public class ReservationService {
     public List<ReservationDTO> getAllReservations() {
         return reservationRepository.findAll()
                 .stream()
-                .map(reservationMapper::toDTO)
+                .map(this::toDTOWithParticipantsCount)
                 .toList();
     }
 
     public ReservationDTO getReservationById(UUID id) {
         return reservationRepository.findById(id)
-                .map(reservationMapper::toDTO)
-                .orElseThrow();
+                .map(this::toDTOWithParticipantsCount)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
     }
 
     public List<ReservationDTO> getPublicReservations() {
         return reservationRepository.findByType(ReservationType.PUBLIC)
                 .stream()
-                .map(reservationMapper::toDTO)
+                .map(this::toDTOWithParticipantsCount)
                 .toList();
     }
 
     public List<ReservationDTO> getReservationsByOrganizerId(UUID organizerId) {
         return reservationRepository.findByOrganizerId(organizerId)
                 .stream()
-                .map(reservationMapper::toDTO)
+                .map(this::toDTOWithParticipantsCount)
                 .toList();
     }
 
@@ -63,8 +63,9 @@ public class ReservationService {
         Reservation reservation = reservationMapper.toEntity(reservationDTO);
         Reservation savedReservation = reservationRepository.save(reservation);
 
-        return reservationMapper.toDTO(savedReservation);
+        return toDTOWithParticipantsCount(savedReservation);
     }
+
     public ParticipationDTO joinReservation(UUID reservationId, UUID memberId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
@@ -112,5 +113,9 @@ public class ReservationService {
         return participationMapper.toDTO(savedParticipation);
     }
 
+    private ReservationDTO toDTOWithParticipantsCount(Reservation reservation) {
+        long participantsCount = participationRepository.countByReservationId(reservation.getId());
 
+        return reservationMapper.toDTO(reservation, participantsCount);
+    }
 }

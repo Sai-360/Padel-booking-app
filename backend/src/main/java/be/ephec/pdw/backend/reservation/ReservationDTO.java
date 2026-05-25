@@ -14,6 +14,7 @@ public record ReservationDTO(
         LocalTime startTime,
         ReservationType type,
         ReservationStatus status,
-        BigDecimal price
+        BigDecimal price,
+        long participantsCount
 ) {
 }
