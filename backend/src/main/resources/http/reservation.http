@@ -69,3 +69,20 @@ Content-Type: application/json
 {
   "memberId": "22222222-2222-2222-2222-222222222222"
 }
+###
+
+POST http://localhost:8080/reservations/99999999-9999-9999-9999-999999999999/join
+Content-Type: application/json
+
+{
+"memberId": "22222222-2222-2222-2222-222222222222"
+}
+
+
+###
+POST http://localhost:8080/reservations/ffffffff-ffff-ffff-ffff-ffffffffffff/join
+Content-Type: application/json
+
+{
+  "memberId": "22222222-2222-2222-2222-222222222222"
+}

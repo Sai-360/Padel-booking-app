@@ -3,6 +3,8 @@ package be.ephec.pdw.backend.reservation;
 import org.springframework.stereotype.Service;
 import be.ephec.pdw.backend.member.Member;
 import be.ephec.pdw.backend.member.MemberRepository;
+import be.ephec.pdw.backend.exception.BusinessException;
+import be.ephec.pdw.backend.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
@@ -65,22 +67,22 @@ public class ReservationService {
     }
     public ParticipationDTO joinReservation(UUID reservationId, UUID memberId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
 
         if (reservation.getType() != ReservationType.PUBLIC) {
-            throw new IllegalStateException("Only public reservations can be joined.");
+            throw new BusinessException("Only public reservations can be joined.");
         }
 
         if (participationRepository.countByReservationId(reservationId) >= 4) {
-            throw new IllegalStateException("Reservation is full.");
+            throw new BusinessException("Reservation is full.");
         }
 
         if (participationRepository.existsByReservationIdAndMemberId(reservationId, memberId)) {
-            throw new IllegalStateException("Member already joined this reservation.");
+            throw new BusinessException("Member already joined this reservation.");
         }
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found."));
 
         Participation participation = Participation.builder()
                 .id(UUID.randomUUID())
@@ -100,7 +102,7 @@ public class ReservationService {
     public ParticipationDTO payReservation(UUID reservationId, UUID memberId) {
         Participation participation = participationRepository
                 .findByReservationIdAndMemberId(reservationId, memberId)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException("Participation not found."));
 
         participation.setPaid(true);
         participation.setStatus(ParticipationStatus.CONFIRMED);
