@@ -94,3 +94,19 @@
   color: #d32f2f;
   font-weight: 600;
 }
+
+.booking-success {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(46, 125, 50, 0.1);
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.booking-error {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(211, 47, 47, 0.1);
+  color: #d32f2f;
+  font-weight: 600;
+}

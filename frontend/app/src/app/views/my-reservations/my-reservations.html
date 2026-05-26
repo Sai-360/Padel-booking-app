@@ -7,7 +7,10 @@
 
   <div class="reservation-list">
     @for (reservation of reservations; track reservation.id) {
-      <app-reservation-card [reservations]="reservation"></app-reservation-card>
+      <app-reservation-card
+        [reservations]="reservation"
+        (reservationUpdated)="loadMyReservations()">
+      </app-reservation-card>
     } @empty {
       <p class="empty-message">You have no reservations yet.</p>
     }

@@ -16,23 +16,38 @@ public class ReservationController {
     }
 
     @GetMapping
-    public List<ReservationDTO> getAllReservations() {
-        return reservationService.getAllReservations();
+    public List<ReservationDTO> getAllReservations(
+            @RequestParam(required = false) UUID currentUserId
+    ) {
+        return reservationService.getAllReservations(currentUserId);
     }
 
     @GetMapping("/{id}")
-    public ReservationDTO getReservationById(@PathVariable UUID id) {
-        return reservationService.getReservationById(id);
+    public ReservationDTO getReservationById(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID currentUserId
+    ) {
+        return reservationService.getReservationById(id, currentUserId);
     }
 
     @GetMapping("/public")
-    public List<ReservationDTO> getPublicReservations() {
-        return reservationService.getPublicReservations();
+    public List<ReservationDTO> getPublicReservations(
+            @RequestParam(required = false) UUID currentUserId
+    ) {
+        return reservationService.getPublicReservations(currentUserId);
     }
 
     @GetMapping("/organizer/{organizerId}")
-    public List<ReservationDTO> getReservationsByOrganizerId(@PathVariable UUID organizerId) {
-        return reservationService.getReservationsByOrganizerId(organizerId);
+    public List<ReservationDTO> getReservationsByOrganizerId(
+            @PathVariable UUID organizerId,
+            @RequestParam(required = false) UUID currentUserId
+    ) {
+        return reservationService.getReservationsByOrganizerId(organizerId, currentUserId);
+    }
+
+    @GetMapping("/member/{memberId}")
+    public List<ReservationDTO> getReservationsByMemberId(@PathVariable UUID memberId) {
+        return reservationService.getReservationsByMemberId(memberId);
     }
 
     @PostMapping

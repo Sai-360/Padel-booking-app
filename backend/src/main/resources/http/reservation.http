@@ -110,6 +110,8 @@ Content-Type: application/json
 
 ###
 
+
+
 ### BUSINESS RULE TEST - FREE member cannot book more than 5 days before match
 POST http://localhost:8080/reservations
 Content-Type: application/json
@@ -145,3 +147,6 @@ Content-Type: application/json
   "price": 60,
   "participantsCount": 0
 }
+###
+GET http://localhost:8080/reservations/public?currentUserId=22222222-2222-2222-2222-222222222222
+Content-Type: application/json

@@ -10,6 +10,8 @@ public interface ParticipationRepository extends JpaRepository<Participation, UU
 
     List<Participation> findByReservationId(UUID reservationId);
 
+    List<Participation> findByMemberId(UUID memberId);
+
     Optional<Participation> findByReservationIdAndMemberId(UUID reservationId, UUID memberId);
 
     boolean existsByReservationIdAndMemberId(UUID reservationId, UUID memberId);

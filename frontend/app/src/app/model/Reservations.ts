@@ -1,22 +1,16 @@
 import { Player } from './Player';
 
 export interface Reservation {
-
-  id: string; // UUID
-
+  id: string;
   siteId: string;
   courtId: string;
-
-  date: string;       // ex: 2026-06-15
-  time: string;       // ex: 10:30
-
-  type: 'PRIVATE' | 'PUBLIC';
-
+  date: string;
+  time: string;
+  type: 'PUBLIC' | 'PRIVATE';
   organizerId: string;
-
   players: Player[];
-
-  price: number; // 60€
-
+  price: number;
   status: 'ACTIVE' | 'CANCELLED' | 'COMPLETED';
+  currentUserJoined?: boolean;
+  currentUserPaid?: boolean;
 }

@@ -15,6 +15,8 @@ public record ReservationDTO(
         ReservationType type,
         ReservationStatus status,
         BigDecimal price,
-        long participantsCount
+        long participantsCount,
+        boolean currentUserJoined,
+        boolean currentUserPaid
 ) {
 }

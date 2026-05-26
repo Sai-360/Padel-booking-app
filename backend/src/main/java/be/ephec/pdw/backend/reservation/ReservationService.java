@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -34,30 +36,47 @@ public class ReservationService {
         this.memberRepository = memberRepository;
     }
 
-    public List<ReservationDTO> getAllReservations() {
+    public List<ReservationDTO> getAllReservations(UUID currentUserId) {
         return reservationRepository.findAll()
                 .stream()
-                .map(this::toDTOWithParticipantsCount)
+                .map(reservation -> toDTOWithUserState(reservation, currentUserId))
                 .toList();
     }
 
-    public ReservationDTO getReservationById(UUID id) {
+    public ReservationDTO getReservationById(UUID id, UUID currentUserId) {
         return reservationRepository.findById(id)
-                .map(this::toDTOWithParticipantsCount)
+                .map(reservation -> toDTOWithUserState(reservation, currentUserId))
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
     }
 
-    public List<ReservationDTO> getPublicReservations() {
+    public List<ReservationDTO> getPublicReservations(UUID currentUserId) {
         return reservationRepository.findByType(ReservationType.PUBLIC)
                 .stream()
-                .map(this::toDTOWithParticipantsCount)
+                .map(reservation -> toDTOWithUserState(reservation, currentUserId))
                 .toList();
     }
 
-    public List<ReservationDTO> getReservationsByOrganizerId(UUID organizerId) {
+    public List<ReservationDTO> getReservationsByOrganizerId(UUID organizerId, UUID currentUserId) {
         return reservationRepository.findByOrganizerId(organizerId)
                 .stream()
-                .map(this::toDTOWithParticipantsCount)
+                .map(reservation -> toDTOWithUserState(reservation, currentUserId))
+                .toList();
+    }
+
+    public List<ReservationDTO> getReservationsByMemberId(UUID memberId) {
+        Map<UUID, Reservation> reservations = new LinkedHashMap<>();
+
+        reservationRepository.findByOrganizerId(memberId)
+                .forEach(reservation -> reservations.put(reservation.getId(), reservation));
+
+        participationRepository.findByMemberId(memberId)
+                .forEach(participation -> reservationRepository.findById(participation.getReservationId())
+                        .ifPresent(reservation -> reservations.put(reservation.getId(), reservation))
+                );
+
+        return reservations.values()
+                .stream()
+                .map(reservation -> toDTOWithUserState(reservation, memberId))
                 .toList();
     }
 
@@ -70,7 +89,7 @@ public class ReservationService {
         Reservation reservation = reservationMapper.toEntity(reservationDTO);
         Reservation savedReservation = reservationRepository.save(reservation);
 
-        return toDTOWithParticipantsCount(savedReservation);
+        return toDTOWithUserState(savedReservation, organizer.getId());
     }
 
     public ParticipationDTO joinReservation(UUID reservationId, UUID memberId) {
@@ -120,6 +139,30 @@ public class ReservationService {
         return participationMapper.toDTO(savedParticipation);
     }
 
+    private ReservationDTO toDTOWithUserState(Reservation reservation, UUID currentUserId) {
+        long participantsCount = participationRepository.countByReservationId(reservation.getId());
+
+        boolean currentUserJoined = false;
+        boolean currentUserPaid = false;
+
+        if (currentUserId != null) {
+            currentUserJoined = participationRepository
+                    .existsByReservationIdAndMemberId(reservation.getId(), currentUserId);
+
+            currentUserPaid = participationRepository
+                    .findByReservationIdAndMemberId(reservation.getId(), currentUserId)
+                    .map(Participation::isPaid)
+                    .orElse(false);
+        }
+
+        return reservationMapper.toDTO(
+                reservation,
+                participantsCount,
+                currentUserJoined,
+                currentUserPaid
+        );
+    }
+
     private void validateReservationCreationRules(ReservationDTO reservationDTO, Member organizer) {
         long daysBeforeMatch = getDaysBeforeMatch(reservationDTO.reservationDate());
 
@@ -162,11 +205,5 @@ public class ReservationService {
         if (daysBeforeMatch > 5) {
             throw new BusinessException("Free members can only book up to 5 days before the match.");
         }
-    }
-
-    private ReservationDTO toDTOWithParticipantsCount(Reservation reservation) {
-        long participantsCount = participationRepository.countByReservationId(reservation.getId());
-
-        return reservationMapper.toDTO(reservation, participantsCount);
     }
 }

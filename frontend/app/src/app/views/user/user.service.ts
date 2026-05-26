@@ -7,10 +7,10 @@ import { Member } from '../../model/Member';
 export class UserService {
 
   private readonly currentUser: Member = {
-    id: 'player-current',
+    id: '11111111-1111-1111-1111-111111111111',
     matricule: 'G0001',
-    name: 'Current Member',
-    type: 'FREE',
+    name: 'Global Member',
+    type: 'GLOBAL',
     unpaidBalance: 0
   };
 

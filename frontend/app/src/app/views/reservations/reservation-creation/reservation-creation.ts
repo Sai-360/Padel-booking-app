@@ -7,7 +7,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { Reservation } from '../../../model/Reservations';
 import { uuid } from '../../../shared/uuid';
 import { ReservationsService } from '../reservations.service';
-import { ReservationCard } from '../reservation-card/reservation-card';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { UserService } from '../../user/user.service';
 
@@ -23,7 +22,6 @@ import { UserService } from '../../user/user.service';
     MatError,
     MatHint,
     MatLabel,
-    ReservationCard,
     MatCardContent,
     MatCard
   ],
@@ -36,10 +34,12 @@ export class ReservationCreation {
   private userService = inject(UserService);
 
   bookingError = '';
+  bookingSuccess = '';
+  isSubmitting = false;
 
   form = new FormGroup({
-    siteId: new FormControl<string>('', [Validators.required]),
-    courtId: new FormControl<string>('', [Validators.required]),
+    siteId: new FormControl<string>('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', [Validators.required]),
+    courtId: new FormControl<string>('cccccccc-cccc-cccc-cccc-cccccccccccc', [Validators.required]),
     date: new FormControl<string>('', [Validators.required]),
     time: new FormControl<string>('', [Validators.required]),
     type: new FormControl<'PUBLIC' | 'PRIVATE'>('PUBLIC', [Validators.required]),
@@ -64,6 +64,7 @@ export class ReservationCreation {
 
   addReservation() {
     this.bookingError = '';
+    this.bookingSuccess = '';
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -84,27 +85,32 @@ export class ReservationCreation {
       time: this.form.get('time')?.value!,
       type: this.form.get('type')?.value!,
       organizerId: currentUser.id,
-      players: [
-        {
-          id: currentUser.id,
-          name: currentUser.name,
-          paid: false,
-          role: 'ORGANIZER'
-        }
-      ],
+      players: [],
       price: this.form.get('price')?.value!,
       status: 'ACTIVE'
     };
 
-    this.reservationsService.addReservation(reservation);
+    this.isSubmitting = true;
 
-    this.form.reset({
-      siteId: '',
-      courtId: '',
-      date: '',
-      time: '',
-      type: 'PUBLIC',
-      price: 60
+    this.reservationsService.addReservation(reservation).subscribe({
+      next: () => {
+        this.bookingSuccess = 'Reservation created successfully.';
+        this.isSubmitting = false;
+
+        this.form.reset({
+          siteId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          courtId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+          date: '',
+          time: '',
+          type: 'PUBLIC',
+          price: 60
+        });
+      },
+      error: error => {
+        this.isSubmitting = false;
+        this.bookingError = error.error?.message || 'Reservation could not be created.';
+        console.error('Error creating reservation', error);
+      }
     });
   }
 
@@ -171,9 +177,5 @@ export class ReservationCreation {
     const diffInMs = selectedDate.getTime() - today.getTime();
 
     return Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
-  }
-
-  get reservations() {
-    return this.reservationsService.getPublicReservations();
   }
 }

@@ -16,9 +16,13 @@
           <mat-form-field appearance="outline">
             <mat-label>Site</mat-label>
             <mat-select formControlName="siteId">
-              <mat-option value="site-1">Site 1</mat-option>
-              <mat-option value="site-2">Site 2</mat-option>
-              <mat-option value="site-3">Site 3</mat-option>
+              <mat-option value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa">
+                Padel Brussels
+              </mat-option>
+
+              <mat-option value="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb">
+                Padel Namur
+              </mat-option>
             </mat-select>
 
             @if (form.get('siteId')?.hasError('required') && form.get('siteId')?.touched) {
@@ -30,9 +34,13 @@
           <mat-form-field appearance="outline">
             <mat-label>Court</mat-label>
             <mat-select formControlName="courtId">
-              <mat-option value="court-1">Court 1</mat-option>
-              <mat-option value="court-2">Court 2</mat-option>
-              <mat-option value="court-3">Court 3</mat-option>
+              <mat-option value="cccccccc-cccc-cccc-cccc-cccccccccccc">
+                Court 1
+              </mat-option>
+
+              <mat-option value="dddddddd-dddd-dddd-dddd-dddddddddddd">
+                Court 2
+              </mat-option>
             </mat-select>
 
             @if (form.get('courtId')?.hasError('required') && form.get('courtId')?.touched) {
@@ -89,15 +97,33 @@
           <span>Total price</span>
           <strong>{{ form.get('price')?.value }} €</strong>
         </div>
+
+        @if (bookingSuccess) {
+          <div class="booking-success">
+            {{ bookingSuccess }}
+          </div>
+        }
+
         @if (bookingError) {
           <div class="booking-error">
             {{ bookingError }}
           </div>
         }
+
         <!-- BUTTON -->
         <div class="form-actions">
-          <button mat-raised-button color="primary" type="submit" class="submit-btn">
-            Create Reservation
+          <button
+            mat-raised-button
+            color="primary"
+            type="submit"
+            class="submit-btn"
+            [disabled]="isSubmitting"
+          >
+            @if (isSubmitting) {
+              Creating...
+            } @else {
+              Create Reservation
+            }
           </button>
         </div>
 

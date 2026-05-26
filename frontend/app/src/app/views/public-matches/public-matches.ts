@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { ReservationCard } from '../reservations/reservation-card/reservation-card';
 import { ReservationsService } from '../reservations/reservations.service';
 import { Reservation } from '../../model/Reservations';
@@ -10,10 +10,24 @@ import { Reservation } from '../../model/Reservations';
   templateUrl: './public-matches.html',
   styleUrl: './public-matches.css'
 })
-export class PublicMatches {
+export class PublicMatches implements OnInit {
+
   private reservationsService = inject(ReservationsService);
 
-  get reservations(): Reservation[] {
-    return this.reservationsService.getPublicReservations();
+  reservations: Reservation[] = [];
+
+  ngOnInit(): void {
+    this.loadPublicReservations();
+  }
+
+  loadPublicReservations(): void {
+    this.reservationsService.getPublicReservations().subscribe({
+      next: reservations => {
+        this.reservations = reservations;
+      },
+      error: error => {
+        console.error('Error loading public reservations', error);
+      }
+    });
   }
 }

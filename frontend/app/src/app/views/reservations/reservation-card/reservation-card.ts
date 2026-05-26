@@ -1,9 +1,8 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, EventEmitter, inject, input, Output } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { Reservation } from '../../../model/Reservations';
 import { ReservationsService } from '../reservations.service';
-import { Player } from '../../../model/Player';
 import { UserService } from '../../user/user.service';
 
 @Component({
@@ -20,6 +19,10 @@ export class ReservationCard {
 
   reservations = input.required<Reservation>();
 
+  @Output() reservationUpdated = new EventEmitter<void>();
+
+  actionError = '';
+
   isFull(): boolean {
     return this.reservations().players.length >= 4;
   }
@@ -28,52 +31,84 @@ export class ReservationCard {
     return this.reservations().type === 'PUBLIC';
   }
 
-  isCurrentUserInReservation(): boolean {
-    const currentUserId = this.userService.getCurrentUserId();
-
-    return this.reservations().players.some(player => player.id === currentUserId);
+  hasJoined(): boolean {
+    return this.reservations().currentUserJoined === true;
   }
 
-  isCurrentUserPaid(): boolean {
-    const currentUserId = this.userService.getCurrentUserId();
-
-    const player = this.reservations().players.find(player => player.id === currentUserId);
-
-    return player?.paid === true;
+  hasPaid(): boolean {
+    return this.reservations().currentUserPaid === true;
   }
 
   canJoin(): boolean {
-    return this.isPublic() && !this.isFull() && !this.isCurrentUserInReservation();
+    return this.isPublic() && !this.isFull() && !this.hasJoined() && !this.isOrganizer();
   }
 
   canPay(): boolean {
-    return this.isCurrentUserInReservation() && !this.isCurrentUserPaid();
+    return this.hasJoined() && !this.hasPaid();
   }
 
   join(): void {
+    this.actionError = '';
+
     const currentUser = this.userService.getCurrentUser();
 
-    const player: Player = {
+    this.reservationsService.joinReservation(this.reservations().id, {
       id: currentUser.id,
       name: currentUser.name,
       paid: false,
       role: 'PLAYER'
-    };
-
-    this.reservationsService.joinReservation(this.reservations().id, player);
+    }).subscribe({
+      next: () => {
+        this.reservationUpdated.emit();
+      },
+      error: error => {
+        this.actionError = error.error?.message || 'Could not join reservation.';
+        console.error('Error joining reservation', error);
+      }
+    });
   }
 
   pay(): void {
-    const currentUserId = this.userService.getCurrentUserId();
+    this.actionError = '';
 
-    this.reservationsService.payReservation(this.reservations().id, currentUserId);
+    const currentUser = this.userService.getCurrentUser();
+
+    this.reservationsService.payReservation(this.reservations().id, currentUser.id).subscribe({
+      next: () => {
+        this.reservationUpdated.emit();
+      },
+      error: error => {
+        this.actionError = error.error?.message || 'Could not pay reservation.';
+        console.error('Error paying reservation', error);
+      }
+    });
+  }
+
+  getSiteName(): string {
+    switch (this.reservations().siteId) {
+      case 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa':
+        return 'Padel Brussels';
+      case 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb':
+        return 'Padel Namur';
+      default:
+        return this.reservations().siteId;
+    }
+  }
+
+  getCourtName(): string {
+    switch (this.reservations().courtId) {
+      case 'cccccccc-cccc-cccc-cccc-cccccccccccc':
+        return 'Court 1';
+      case 'dddddddd-dddd-dddd-dddd-dddddddddddd':
+        return 'Court 2';
+      default:
+        return this.reservations().courtId;
+    }
   }
 
   isOrganizer(): boolean {
     return this.reservations().organizerId === this.userService.getCurrentUserId();
   }
 
-  canManagePrivateMatch(): boolean {
-    return !this.isPublic() && this.isOrganizer();
-  }
+
 }

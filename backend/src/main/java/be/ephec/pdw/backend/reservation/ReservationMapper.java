@@ -5,7 +5,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReservationMapper {
 
-    public ReservationDTO toDTO(Reservation reservation, long participantsCount) {
+    public ReservationDTO toDTO(
+            Reservation reservation,
+            long participantsCount,
+            boolean currentUserJoined,
+            boolean currentUserPaid
+    ) {
         return new ReservationDTO(
                 reservation.getId(),
                 reservation.getSiteId(),
@@ -16,7 +21,9 @@ public class ReservationMapper {
                 reservation.getType(),
                 reservation.getStatus(),
                 reservation.getPrice(),
-                participantsCount
+                participantsCount,
+                currentUserJoined,
+                currentUserPaid
         );
     }
 

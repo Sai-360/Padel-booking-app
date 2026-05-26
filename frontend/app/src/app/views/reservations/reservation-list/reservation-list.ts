@@ -1,6 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
+import { Component, inject, OnInit } from '@angular/core';
 import { ReservationCard } from '../reservation-card/reservation-card';
 import { ReservationsService } from '../reservations.service';
 import { Reservation } from '../../../model/Reservations';
@@ -8,12 +6,28 @@ import { Reservation } from '../../../model/Reservations';
 @Component({
   selector: 'app-reservation-list',
   standalone: true,
-  imports: [ReservationCard, MatButtonModule, RouterLink],
+  imports: [ReservationCard],
   templateUrl: './reservation-list.html',
   styleUrl: './reservation-list.css'
 })
-export class ReservationList {
+export class ReservationList implements OnInit {
+
   private reservationsService = inject(ReservationsService);
 
-  reservations: Reservation[] = this.reservationsService.getPublicReservations();
+  reservations: Reservation[] = [];
+
+  ngOnInit(): void {
+    this.loadReservations();
+  }
+
+  loadReservations(): void {
+    this.reservationsService.getPublicReservations().subscribe({
+      next: reservations => {
+        this.reservations = reservations;
+      },
+      error: error => {
+        console.error('Error loading reservations', error);
+      }
+    });
+  }
 }
