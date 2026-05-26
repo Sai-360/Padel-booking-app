@@ -12,6 +12,8 @@ export const routes: Routes = [
   { path: 'book', component: ReservationCreation },
   { path: 'public-matches', component: PublicMatches },
   { path: 'my-reservations', component: MyReservations },
-  { path: 'profile', component: MyProfile }
+  { path: 'profile', component: MyProfile },
+  {path: 'login', loadComponent: () => import('./views/login/login').then(m => m.Login)
+  }
 
 ];

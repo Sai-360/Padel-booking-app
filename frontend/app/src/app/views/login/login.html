@@ -1,0 +1,35 @@
+<div class="login-page">
+
+  <mat-card class="login-card">
+    <mat-card-content>
+
+      <h1>Login</h1>
+      <p>Enter your member matricule to continue.</p>
+
+      <form [formGroup]="form" (ngSubmit)="login()">
+
+        <mat-form-field appearance="outline">
+          <mat-label>Matricule</mat-label>
+          <input matInput formControlName="matricule" placeholder="e.g. G0001">
+
+          @if (form.get('matricule')?.hasError('required') && form.get('matricule')?.touched) {
+            <mat-error>Matricule is required</mat-error>
+          }
+        </mat-form-field>
+
+        @if (loginError) {
+          <div class="login-error">
+            {{ loginError }}
+          </div>
+        }
+
+        <button mat-raised-button color="primary" type="submit">
+          Login
+        </button>
+
+      </form>
+
+    </mat-card-content>
+  </mat-card>
+
+</div>

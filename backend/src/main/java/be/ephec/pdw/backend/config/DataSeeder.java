@@ -22,10 +22,14 @@ import java.util.UUID;
 @Component
 public class DataSeeder implements CommandLineRunner {
 
-    private static final UUID CURRENT_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID GLOBAL_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID OTHER_USER_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
+    private static final UUID SITE_USER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final UUID FREE_USER_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
     private static final UUID SITE_BRUSSELS_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static final UUID SITE_NAMUR_ID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
     private static final UUID COURT_1_ID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final UUID COURT_2_ID = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
@@ -61,9 +65,9 @@ public class DataSeeder implements CommandLineRunner {
 
         memberRepository.save(
                 Member.builder()
-                        .id(CURRENT_USER_ID)
+                        .id(GLOBAL_USER_ID)
                         .matricule("G0001")
-                        .name("Current User")
+                        .name("Global Member")
                         .type(MemberType.GLOBAL)
                         .siteId(null)
                         .unpaidBalance(BigDecimal.ZERO)
@@ -75,8 +79,32 @@ public class DataSeeder implements CommandLineRunner {
                 Member.builder()
                         .id(OTHER_USER_ID)
                         .matricule("G0002")
-                        .name("Other User")
+                        .name("Other Global Member")
                         .type(MemberType.GLOBAL)
+                        .siteId(null)
+                        .unpaidBalance(BigDecimal.ZERO)
+                        .blockedUntil(null)
+                        .build()
+        );
+
+        memberRepository.save(
+                Member.builder()
+                        .id(SITE_USER_ID)
+                        .matricule("S0001")
+                        .name("Site Member Brussels")
+                        .type(MemberType.SITE)
+                        .siteId(SITE_BRUSSELS_ID.toString())
+                        .unpaidBalance(BigDecimal.ZERO)
+                        .blockedUntil(null)
+                        .build()
+        );
+
+        memberRepository.save(
+                Member.builder()
+                        .id(FREE_USER_ID)
+                        .matricule("L0001")
+                        .name("Free Member")
+                        .type(MemberType.FREE)
                         .siteId(null)
                         .unpaidBalance(BigDecimal.ZERO)
                         .blockedUntil(null)
@@ -96,6 +124,16 @@ public class DataSeeder implements CommandLineRunner {
                         .location("Brussels")
                         .openingTime(LocalTime.of(8, 0))
                         .closingTime(LocalTime.of(22, 0))
+                        .build()
+        );
+
+        siteRepository.save(
+                Site.builder()
+                        .id(SITE_NAMUR_ID)
+                        .name("Padel Namur")
+                        .location("Namur")
+                        .openingTime(LocalTime.of(9, 0))
+                        .closingTime(LocalTime.of(21, 0))
                         .build()
         );
     }
@@ -148,7 +186,7 @@ public class DataSeeder implements CommandLineRunner {
                         .id(UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"))
                         .siteId(SITE_BRUSSELS_ID)
                         .courtId(COURT_2_ID)
-                        .organizerId(CURRENT_USER_ID)
+                        .organizerId(GLOBAL_USER_ID)
                         .reservationDate(LocalDate.now().plusDays(6))
                         .startTime(LocalTime.of(12, 0))
                         .type(ReservationType.PRIVATE)
