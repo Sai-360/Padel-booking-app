@@ -1,0 +1,73 @@
+<div class="admin-page">
+
+  <div class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p>Overview of reservations, matches and estimated revenue.</p>
+  </div>
+
+  @if (loading) {
+    <p>Loading dashboard...</p>
+  }
+
+  @if (errorMessage) {
+    <div class="admin-error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <div class="stats-grid">
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <span class="stat-label">Total reservations</span>
+        <strong>{{ getTotalReservations() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <span class="stat-label">Active reservations</span>
+        <strong>{{ getActiveReservationsCount() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <span class="stat-label">Public matches</span>
+        <strong>{{ getPublicReservationsCount() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <span class="stat-label">Private matches</span>
+        <strong>{{ getPrivateReservationsCount() }}</strong>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card revenue-card">
+      <mat-card-content>
+        <span class="stat-label">Estimated revenue</span>
+        <strong>{{ getEstimatedRevenue() }} €</strong>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <div class="section-header">
+    <h2>Reservations</h2>
+    <p>Current state of all matches.</p>
+  </div>
+
+  <div class="reservation-list">
+    @for (reservation of reservations; track reservation.id) {
+      <app-reservation-card
+        [reservations]="reservation"
+        (reservationUpdated)="loadReservations()">
+      </app-reservation-card>
+    } @empty {
+      <p>No reservations found.</p>
+    }
+  </div>
+
+</div>

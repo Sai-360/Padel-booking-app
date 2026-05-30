@@ -1,0 +1,91 @@
+.admin-page {
+  padding: 32px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin-bottom: 4px;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.page-header p {
+  opacity: 0.75;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  border-radius: 20px;
+}
+
+.stat-card mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.stat-card strong {
+  font-size: 28px;
+}
+
+.revenue-card strong {
+  font-size: 30px;
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  margin-bottom: 4px;
+  font-size: 26px;
+}
+
+.section-header p {
+  opacity: 0.7;
+}
+
+.reservation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-error {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(211, 47, 47, 0.12);
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+@media (max-width: 1000px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-page {
+    padding: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

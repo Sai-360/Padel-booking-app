@@ -13,7 +13,6 @@ export const routes: Routes = [
   { path: 'public-matches', component: PublicMatches },
   { path: 'my-reservations', component: MyReservations },
   { path: 'profile', component: MyProfile },
-  {path: 'login', loadComponent: () => import('./views/login/login').then(m => m.Login)
-  }
-
+  {path: 'login', loadComponent: () => import('./views/login/login').then(m => m.Login)},
+  {path: 'admin', loadComponent: () => import('./views/admin/admin').then(m => m.Admin)}
 ];

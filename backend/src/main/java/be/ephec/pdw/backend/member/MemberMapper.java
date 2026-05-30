@@ -13,10 +13,10 @@ public class MemberMapper {
                 member.getType(),
                 member.getSiteId(),
                 member.getUnpaidBalance(),
-                member.getBlockedUntil()
+                member.getBlockedUntil(),
+                member.getAdminRole()
         );
     }
-
     public Member toEntity(MemberDTO memberDTO) {
         return Member.builder()
                 .id(memberDTO.id())

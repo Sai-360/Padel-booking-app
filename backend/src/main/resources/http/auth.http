@@ -1,0 +1,55 @@
+### ADMIN LOGIN - GLOBAL ADMIN
+POST http://localhost:8080/auth/admin/login
+Content-Type: application/json
+
+{
+  "matricule": "G0001",
+  "password": "admin123"
+}
+
+###
+
+### ADMIN LOGIN - SITE ADMIN
+POST http://localhost:8080/auth/admin/login
+Content-Type: application/json
+
+{
+  "matricule": "S0001",
+  "password": "site123"
+}
+
+###
+
+### ADMIN LOGIN - WRONG PASSWORD
+POST http://localhost:8080/auth/admin/login
+Content-Type: application/json
+
+{
+  "matricule": "G0001",
+  "password": "wrong"
+}
+
+
+### ADMIN LOGIN - GLOBAL ADMIN
+POST http://localhost:8080/auth/admin/login
+Content-Type: application/json
+
+{
+  "matricule": "G0001",
+  "password": "admin123"
+}
+
+
+### ADMIN RESERVATIONS - WITH JWT
+GET http://localhost:8080/admin/reservations
+Authorization: Bearer COLLE_ICI_LE_TOKEN
+
+###
+
+### ADMIN MEMBERS - WITH JWT
+GET http://localhost:8080/admin/members
+Authorization: Bearer COLLE_ICI_LE_TOKEN
+
+###
+GET http://localhost:8080/members/G0001
+Content-Type: application/json

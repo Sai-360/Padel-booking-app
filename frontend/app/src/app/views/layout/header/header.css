@@ -1,0 +1,25 @@
+.header-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title {
+  font-weight: 700;
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+.connected-label {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+@media (max-width: 700px) {
+  .connected-label {
+    display: none;
+  }
+}

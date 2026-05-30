@@ -7,6 +7,7 @@ import { MatError, MatFormFieldModule, MatLabel } from '@angular/material/form-f
 import { MatInputModule } from '@angular/material/input';
 import { MemberApiService } from '../user/member-api.service';
 import { UserService } from '../user/user.service';
+import { AdminAuthService } from '../../shared/services/admin-auth.service';
 
 @Component({
   selector: 'app-login',
@@ -28,12 +29,14 @@ export class Login {
 
   private memberApiService = inject(MemberApiService);
   private userService = inject(UserService);
+  private adminAuthService = inject(AdminAuthService);
   private router = inject(Router);
 
   loginError = '';
 
   form = new FormGroup({
-    matricule: new FormControl<string>('', [Validators.required])
+    matricule: new FormControl<string>('', [Validators.required]),
+    password: new FormControl<string>('')
   });
 
   login(): void {
@@ -44,10 +47,37 @@ export class Login {
       return;
     }
 
-    const matricule = this.form.get('matricule')?.value!;
+    const matricule = this.form.get('matricule')?.value?.trim() ?? '';
+    const password = this.form.get('password')?.value?.trim() ?? '';
 
+    if (password) {
+      this.loginAsAdmin(matricule, password);
+      return;
+    }
+
+    this.loginAsMember(matricule);
+  }
+
+  private loginAsAdmin(matricule: string, password: string): void {
+    this.adminAuthService.login(matricule, password).subscribe({
+      next: () => {
+        this.router.navigate(['/admin']);
+      },
+      error: error => {
+        this.loginError = error.error?.message || 'Invalid admin credentials.';
+        console.error(error);
+      }
+    });
+  }
+
+  private loginAsMember(matricule: string): void {
     this.memberApiService.getMemberByMatricule(matricule).subscribe({
       next: member => {
+        if (member.adminRole && member.adminRole !== 'NONE') {
+          this.loginError = 'Admin accounts must use a password.';
+          return;
+        }
+
         this.userService.setCurrentUser(member);
         this.router.navigate(['/public-matches']);
       },

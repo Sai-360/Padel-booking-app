@@ -4,17 +4,21 @@
     <mat-card-content>
 
       <h1>Login</h1>
-      <p>Enter your member matricule to continue.</p>
+      <p>Enter your matricule to continue.</p>
 
       <form [formGroup]="form" (ngSubmit)="login()">
 
         <mat-form-field appearance="outline">
           <mat-label>Matricule</mat-label>
-          <input matInput formControlName="matricule" placeholder="e.g. G0001">
-
+          <input matInput formControlName="matricule" placeholder="e.g. L0001">
           @if (form.get('matricule')?.hasError('required') && form.get('matricule')?.touched) {
             <mat-error>Matricule is required</mat-error>
           }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Admin password</mat-label>
+          <input matInput type="password" formControlName="password" placeholder="Only for admins">
         </mat-form-field>
 
         @if (loginError) {

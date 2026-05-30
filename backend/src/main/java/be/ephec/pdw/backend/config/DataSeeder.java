@@ -2,6 +2,7 @@ package be.ephec.pdw.backend.config;
 
 import be.ephec.pdw.backend.court.Court;
 import be.ephec.pdw.backend.court.CourtRepository;
+import be.ephec.pdw.backend.member.AdminRole;
 import be.ephec.pdw.backend.member.Member;
 import be.ephec.pdw.backend.member.MemberRepository;
 import be.ephec.pdw.backend.member.MemberType;
@@ -12,6 +13,7 @@ import be.ephec.pdw.backend.reservation.ReservationType;
 import be.ephec.pdw.backend.site.Site;
 import be.ephec.pdw.backend.site.SiteRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -37,17 +39,20 @@ public class DataSeeder implements CommandLineRunner {
     private final SiteRepository siteRepository;
     private final CourtRepository courtRepository;
     private final ReservationRepository reservationRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(
             MemberRepository memberRepository,
             SiteRepository siteRepository,
             CourtRepository courtRepository,
-            ReservationRepository reservationRepository
+            ReservationRepository reservationRepository,
+            PasswordEncoder passwordEncoder
     ) {
         this.memberRepository = memberRepository;
         this.siteRepository = siteRepository;
         this.courtRepository = courtRepository;
         this.reservationRepository = reservationRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -67,11 +72,13 @@ public class DataSeeder implements CommandLineRunner {
                 Member.builder()
                         .id(GLOBAL_USER_ID)
                         .matricule("G0001")
-                        .name("Global Member")
+                        .name("Global Admin")
                         .type(MemberType.GLOBAL)
                         .siteId(null)
                         .unpaidBalance(BigDecimal.ZERO)
                         .blockedUntil(null)
+                        .adminRole(AdminRole.GLOBAL_ADMIN)
+                        .adminPassword(passwordEncoder.encode("admin123"))
                         .build()
         );
 
@@ -84,6 +91,8 @@ public class DataSeeder implements CommandLineRunner {
                         .siteId(null)
                         .unpaidBalance(BigDecimal.ZERO)
                         .blockedUntil(null)
+                        .adminRole(AdminRole.NONE)
+                        .adminPassword(null)
                         .build()
         );
 
@@ -91,11 +100,13 @@ public class DataSeeder implements CommandLineRunner {
                 Member.builder()
                         .id(SITE_USER_ID)
                         .matricule("S0001")
-                        .name("Site Member Brussels")
+                        .name("Site Admin Brussels")
                         .type(MemberType.SITE)
                         .siteId(SITE_BRUSSELS_ID.toString())
                         .unpaidBalance(BigDecimal.ZERO)
                         .blockedUntil(null)
+                        .adminRole(AdminRole.SITE_ADMIN)
+                        .adminPassword(passwordEncoder.encode("site123"))
                         .build()
         );
 
@@ -108,6 +119,8 @@ public class DataSeeder implements CommandLineRunner {
                         .siteId(null)
                         .unpaidBalance(BigDecimal.ZERO)
                         .blockedUntil(null)
+                        .adminRole(AdminRole.NONE)
+                        .adminPassword(null)
                         .build()
         );
     }

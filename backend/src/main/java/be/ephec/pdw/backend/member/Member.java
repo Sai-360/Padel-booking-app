@@ -34,4 +34,11 @@ public class Member {
     private BigDecimal unpaidBalance;
 
     private LocalDate blockedUntil;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private AdminRole adminRole = AdminRole.NONE;
+
+    private String adminPassword;
 }

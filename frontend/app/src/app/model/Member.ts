@@ -4,8 +4,9 @@ export interface Member {
   id: string;
   matricule: string;
   name: string;
-  type: MemberType;
-  siteId?: string;
+  type: 'GLOBAL' | 'SITE' | 'FREE';
+  siteId?: string | null;
   unpaidBalance: number;
-  blockedUntil?: string;
+  blockedUntil?: string | null;
+  adminRole?: 'NONE' | 'GLOBAL_ADMIN' | 'SITE_ADMIN';
 }
