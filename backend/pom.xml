@@ -24,7 +24,7 @@
 
     <dependencies>
 
-        <!-- Web / REST API -->
+        <!-- REST API -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
@@ -50,17 +50,24 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- General tests: JUnit, Mockito, assertions... -->
+        <!-- Unit tests: JUnit, Mockito, assertions -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Spring Boot 4 Web MVC tests: WebMvcTest, MockMvc... -->
+        <!-- Controller tests: WebMvcTest, MockMvc -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Repository tests: DataJpaTest -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -6,6 +6,14 @@ import { Member } from '../../model/Member';
 })
 export class UserService {
 
+  private readonly defaultUser: Member = {
+    id: '33333333-3333-3333-3333-333333333333',
+    matricule: 'L0001',
+    name: 'Free Member',
+    type: 'FREE',
+    unpaidBalance: 0
+  };
+
   private currentUser: Member | null = null;
 
   setCurrentUser(member: Member): void {
@@ -25,13 +33,10 @@ export class UserService {
       return this.currentUser!;
     }
 
-    return {
-      id: '11111111-1111-1111-1111-111111111111',
-      matricule: 'G0001',
-      name: 'Global Member',
-      type: 'GLOBAL',
-      unpaidBalance: 0
-    };
+    this.currentUser = this.defaultUser;
+    localStorage.setItem('currentUser', JSON.stringify(this.defaultUser));
+
+    return this.defaultUser;
   }
 
   getCurrentUserId(): string {
@@ -39,7 +44,7 @@ export class UserService {
   }
 
   isLoggedIn(): boolean {
-    return this.currentUser !== null || localStorage.getItem('currentUser') !== null;
+    return true;
   }
 
   logout(): void {

@@ -18,7 +18,9 @@ Content-Type: application/json
   "type": "PUBLIC",
   "status": "ACTIVE",
   "price": 60,
-  "participantsCount": 0
+  "participantsCount": 0,
+  "currentUserJoined": false,
+  "currentUserPaid": false
 }
 
 ###
@@ -37,13 +39,21 @@ Content-Type: application/json
   "type": "PRIVATE",
   "status": "ACTIVE",
   "price": 60,
-  "participantsCount": 0
+  "participantsCount": 0,
+  "currentUserJoined": false,
+  "currentUserPaid": false
 }
 
 ###
 
 ### GET public reservations
 GET http://localhost:8080/reservations/public
+Content-Type: application/json
+
+###
+
+### GET public reservations for current user
+GET http://localhost:8080/reservations/public?currentUserId=22222222-2222-2222-2222-222222222222
 Content-Type: application/json
 
 ###
@@ -56,6 +66,12 @@ Content-Type: application/json
 
 ### GET reservations by organizer
 GET http://localhost:8080/reservations/organizer/11111111-1111-1111-1111-111111111111
+Content-Type: application/json
+
+###
+
+### GET reservations by member
+GET http://localhost:8080/reservations/member/22222222-2222-2222-2222-222222222222
 Content-Type: application/json
 
 ###
@@ -76,6 +92,39 @@ Content-Type: application/json
 
 {
   "memberId": "22222222-2222-2222-2222-222222222222"
+}
+
+###
+
+### APPLY PENALTY - incomplete private reservation becomes public and organizer is blocked
+POST http://localhost:8080/reservations/ffffffff-ffff-ffff-ffff-ffffffffffff/apply-penalty
+Content-Type: application/json
+
+###
+
+### AFTER PENALTY - private reservation should now appear in public reservations
+GET http://localhost:8080/reservations/public
+Content-Type: application/json
+
+###
+
+### AFTER PENALTY - organizer should be blocked and cannot create a new reservation
+POST http://localhost:8080/reservations
+Content-Type: application/json
+
+{
+  "id": "77777777-7777-7777-7777-777777777777",
+  "siteId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "courtId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "organizerId": "11111111-1111-1111-1111-111111111111",
+  "reservationDate": "2026-06-07",
+  "startTime": "15:30:00",
+  "type": "PUBLIC",
+  "status": "ACTIVE",
+  "price": 60,
+  "participantsCount": 0,
+  "currentUserJoined": false,
+  "currentUserPaid": false
 }
 
 ###
@@ -110,8 +159,6 @@ Content-Type: application/json
 
 ###
 
-
-
 ### BUSINESS RULE TEST - FREE member cannot book more than 5 days before match
 POST http://localhost:8080/reservations
 Content-Type: application/json
@@ -126,7 +173,9 @@ Content-Type: application/json
   "type": "PUBLIC",
   "status": "ACTIVE",
   "price": 60,
-  "participantsCount": 0
+  "participantsCount": 0,
+  "currentUserJoined": false,
+  "currentUserPaid": false
 }
 
 ###
@@ -145,8 +194,7 @@ Content-Type: application/json
   "type": "PUBLIC",
   "status": "ACTIVE",
   "price": 60,
-  "participantsCount": 0
+  "participantsCount": 0,
+  "currentUserJoined": false,
+  "currentUserPaid": false
 }
-###
-GET http://localhost:8080/reservations/public?currentUserId=22222222-2222-2222-2222-222222222222
-Content-Type: application/json

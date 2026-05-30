@@ -5,6 +5,8 @@ import be.ephec.pdw.backend.exception.ResourceNotFoundException;
 import be.ephec.pdw.backend.member.Member;
 import be.ephec.pdw.backend.member.MemberRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -84,6 +86,12 @@ public class ReservationService {
         Member organizer = memberRepository.findById(reservationDTO.organizerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
 
+        if (organizer.getBlockedUntil() != null && organizer.getBlockedUntil().isAfter(LocalDate.now())) {
+            throw new BusinessException(
+                    "Member is blocked from creating reservations until " + organizer.getBlockedUntil() + "."
+            );
+        }
+
         validateReservationCreationRules(reservationDTO, organizer);
 
         Reservation reservation = reservationMapper.toEntity(reservationDTO);
@@ -126,6 +134,34 @@ public class ReservationService {
         return participationMapper.toDTO(savedParticipation);
     }
 
+    public ReservationDTO applyPenaltyForIncompletePrivateReservation(UUID reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
+
+        if (reservation.getType() != ReservationType.PRIVATE) {
+            throw new BusinessException("Only private reservations can receive this penalty.");
+        }
+
+        long participantsCount = participationRepository.countByReservationId(reservationId);
+
+        if (participantsCount >= 4) {
+            throw new BusinessException("Private reservation is complete.");
+        }
+
+        Member organizer = memberRepository.findById(reservation.getOrganizerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
+
+        reservation.setType(ReservationType.PUBLIC);
+
+        organizer.setBlockedUntil(LocalDate.now().plusWeeks(1));
+
+        memberRepository.save(organizer);
+
+        Reservation savedReservation = reservationRepository.save(reservation);
+
+        return toDTOWithUserState(savedReservation, organizer.getId());
+    }
+
     public ParticipationDTO payReservation(UUID reservationId, UUID memberId) {
         Participation participation = participationRepository
                 .findByReservationIdAndMemberId(reservationId, memberId)
@@ -137,6 +173,23 @@ public class ReservationService {
         Participation savedParticipation = participationRepository.save(participation);
 
         return participationMapper.toDTO(savedParticipation);
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    @Transactional
+    public void automaticallyApplyPenaltiesForTomorrowPrivateReservations() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+
+        List<Reservation> privateReservationsTomorrow =
+                reservationRepository.findByTypeAndReservationDate(ReservationType.PRIVATE, tomorrow);
+
+        for (Reservation reservation : privateReservationsTomorrow) {
+            long participantsCount = participationRepository.countByReservationId(reservation.getId());
+
+            if (participantsCount < 4) {
+                applyPenaltyForIncompletePrivateReservation(reservation.getId());
+            }
+        }
     }
 
     private ReservationDTO toDTOWithUserState(Reservation reservation, UUID currentUserId) {

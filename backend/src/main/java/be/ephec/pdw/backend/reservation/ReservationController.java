@@ -70,4 +70,8 @@ public class ReservationController {
     ) {
         return reservationService.payReservation(id, request.memberId());
     }
-}
+
+    @PostMapping("/{id}/apply-penalty")
+    public ReservationDTO applyPenaltyForIncompletePrivateReservation(@PathVariable UUID id) {
+        return reservationService.applyPenaltyForIncompletePrivateReservation(id);
+    }}
