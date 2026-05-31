@@ -35,6 +35,8 @@ public class DataSeeder implements CommandLineRunner {
     private static final UUID COURT_1_ID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final UUID COURT_2_ID = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
+    private static final UUID DEBT_USER_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
+
     private final MemberRepository memberRepository;
     private final SiteRepository siteRepository;
     private final CourtRepository courtRepository;
@@ -84,6 +86,20 @@ public class DataSeeder implements CommandLineRunner {
 
         memberRepository.save(
                 Member.builder()
+                        .id(DEBT_USER_ID)
+                        .matricule("G0003")
+                        .name("Global Member With Debt")
+                        .type(MemberType.GLOBAL)
+                        .siteId(null)
+                        .unpaidBalance(BigDecimal.valueOf(15))
+                        .blockedUntil(null)
+                        .adminRole(AdminRole.NONE)
+                        .adminPassword(null)
+                        .build()
+        );
+
+        memberRepository.save(
+                Member.builder()
                         .id(OTHER_USER_ID)
                         .matricule("G0002")
                         .name("Other Global Member")
@@ -95,6 +111,7 @@ public class DataSeeder implements CommandLineRunner {
                         .adminPassword(null)
                         .build()
         );
+
 
         memberRepository.save(
                 Member.builder()

@@ -14,4 +14,8 @@ export class MemberApiService {
   getMemberByMatricule(matricule: string): Observable<Member> {
     return this.http.get<Member>(`${this.apiUrl}/${matricule}`);
   }
+
+  payBalance(memberId: string): Observable<Member> {
+    return this.http.post<Member>(`${this.apiUrl}/${memberId}/pay-balance`, {});
+  }
 }

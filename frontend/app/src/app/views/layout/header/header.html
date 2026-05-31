@@ -26,6 +26,12 @@
     </button>
   }
 
+  @if (hasUnpaidBalance()) {
+    <button mat-button (click)="payBalance()">
+      Pay balance
+    </button>
+  }
+
   @if (isLoggedIn()) {
     <button mat-button (click)="logout()">
       Logout

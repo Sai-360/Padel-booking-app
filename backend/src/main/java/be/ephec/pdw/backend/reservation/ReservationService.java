@@ -4,10 +4,11 @@ import be.ephec.pdw.backend.exception.BusinessException;
 import be.ephec.pdw.backend.exception.ResourceNotFoundException;
 import be.ephec.pdw.backend.member.Member;
 import be.ephec.pdw.backend.member.MemberRepository;
-import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
@@ -92,6 +93,13 @@ public class ReservationService {
             );
         }
 
+        if (organizer.getUnpaidBalance() != null
+                && organizer.getUnpaidBalance().compareTo(BigDecimal.ZERO) > 0) {
+            throw new BusinessException(
+                    "Member cannot create a reservation because he has an unpaid balance."
+            );
+        }
+
         validateReservationCreationRules(reservationDTO, organizer);
 
         Reservation reservation = reservationMapper.toEntity(reservationDTO);
@@ -152,7 +160,6 @@ public class ReservationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
 
         reservation.setType(ReservationType.PUBLIC);
-
         organizer.setBlockedUntil(LocalDate.now().plusWeeks(1));
 
         memberRepository.save(organizer);
@@ -189,6 +196,48 @@ public class ReservationService {
             if (participantsCount < 4) {
                 applyPenaltyForIncompletePrivateReservation(reservation.getId());
             }
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    @Transactional
+    public void automaticallyApplyUnpaidBalanceForTomorrowPublicReservations() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+
+        List<Reservation> publicReservationsTomorrow =
+                reservationRepository.findByTypeAndReservationDate(ReservationType.PUBLIC, tomorrow);
+
+        for (Reservation reservation : publicReservationsTomorrow) {
+            if (reservation.isBalanceApplied()) {
+                continue;
+            }
+
+            long paidParticipantsCount = participationRepository.findByReservationId(reservation.getId())
+                    .stream()
+                    .filter(Participation::isPaid)
+                    .count();
+
+            if (paidParticipantsCount >= 4) {
+                reservation.setBalanceApplied(true);
+                reservationRepository.save(reservation);
+                continue;
+            }
+
+            int missingPlayers = 4 - (int) paidParticipantsCount;
+            BigDecimal amountDue = BigDecimal.valueOf(missingPlayers).multiply(BigDecimal.valueOf(15));
+
+            Member organizer = memberRepository.findById(reservation.getOrganizerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
+
+            BigDecimal currentBalance = organizer.getUnpaidBalance() == null
+                    ? BigDecimal.ZERO
+                    : organizer.getUnpaidBalance();
+
+            organizer.setUnpaidBalance(currentBalance.add(amountDue));
+            memberRepository.save(organizer);
+
+            reservation.setBalanceApplied(true);
+            reservationRepository.save(reservation);
         }
     }
 

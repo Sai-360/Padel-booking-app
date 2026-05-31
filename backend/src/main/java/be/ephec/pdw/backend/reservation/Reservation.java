@@ -44,4 +44,8 @@ public class Reservation {
 
     @Column(nullable = false)
     private BigDecimal price;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean balanceApplied = false;
 }
