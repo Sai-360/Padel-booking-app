@@ -1,33 +1,129 @@
-:host {
-  display: block;
+.private-players-card,
+.private-players-box {
+  margin: 18px 0 32px;
+  padding: 24px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(255, 255, 255, 0.98));
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
 }
 
-.my-reservations-page {
-  padding: 24px 20px 40px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 800;
-}
-
-.page-header p {
-  margin-top: 6px;
-  opacity: 0.7;
-}
-
-.reservation-list {
+.private-card-header {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
-.empty-message {
-  opacity: 0.7;
+.private-card-header h3,
+.private-players-box h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.private-card-header p,
+.private-players-box p {
+  margin: 6px 0 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.private-badge {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.private-reservation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 18px;
+}
+
+.private-reservation-summary span {
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: white;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+}
+
+.private-help {
+  margin: 0 0 18px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.private-player-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.private-error,
+.private-success {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.private-error {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.private-success {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+}
+
+.private-players-card button,
+.private-players-box button {
+  margin-top: 10px;
+  border-radius: 999px;
+  padding: 0 22px;
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.not-private-info {
+  margin: 10px 0 28px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
   font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .private-player-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .private-card-header {
+    flex-direction: column;
+  }
+
+  .single-player-input {
+    grid-template-columns: minmax(260px, 420px);
+  }
 }

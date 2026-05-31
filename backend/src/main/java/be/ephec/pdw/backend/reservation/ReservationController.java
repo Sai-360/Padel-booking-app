@@ -71,7 +71,26 @@ public class ReservationController {
         return reservationService.payReservation(id, request.memberId());
     }
 
+    @PostMapping("/{id}/private-players")
+    public List<ParticipationDTO> addPrivatePlayers(
+            @PathVariable UUID id,
+            @RequestBody AddPrivatePlayersRequest request
+    ) {
+        return reservationService.addPrivatePlayers(
+                id,
+                request.organizerId(),
+                request.playerMatricules()
+        );
+    }
+
     @PostMapping("/{id}/apply-penalty")
     public ReservationDTO applyPenaltyForIncompletePrivateReservation(@PathVariable UUID id) {
         return reservationService.applyPenaltyForIncompletePrivateReservation(id);
-    }}
+    }
+
+    public record AddPrivatePlayersRequest(
+            UUID organizerId,
+            List<String> playerMatricules
+    ) {
+    }
+}

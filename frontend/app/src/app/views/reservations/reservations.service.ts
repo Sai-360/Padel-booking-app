@@ -122,4 +122,18 @@ export class ReservationsService {
 
     return time;
   }
+
+  addPrivatePlayers(
+    reservationId: string,
+    organizerId: string,
+    playerMatricules: string[]
+  ): Observable<any[]> {
+    return this.http.post<any[]>(
+      `${this.apiUrl}/${reservationId}/private-players`,
+      {
+        organizerId,
+        playerMatricules
+      }
+    );
+  }
 }

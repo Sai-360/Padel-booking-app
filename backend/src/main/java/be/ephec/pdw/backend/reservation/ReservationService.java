@@ -11,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -140,6 +142,96 @@ public class ReservationService {
         Participation savedParticipation = participationRepository.save(participation);
 
         return participationMapper.toDTO(savedParticipation);
+    }
+
+    public List<ParticipationDTO> addPrivatePlayers(
+            UUID reservationId,
+            UUID organizerId,
+            List<String> playerMatricules
+    ) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
+
+        if (!ReservationType.PRIVATE.name().equals(reservation.getType().name())) {
+            throw new BusinessException(
+                    "Players can only be added manually to private reservations. Current type is: " + reservation.getType()
+            );
+        }
+
+        if (!reservation.getOrganizerId().equals(organizerId)) {
+            throw new BusinessException("Only the organizer can add players to this private reservation.");
+        }
+
+        if (playerMatricules == null || playerMatricules.isEmpty()) {
+            throw new BusinessException("At least one player matricule is required.");
+        }
+
+        if (playerMatricules.size() > 3) {
+            throw new BusinessException("You can add a maximum of 3 invited players.");
+        }
+
+        Set<String> uniqueMatricules = new HashSet<>(playerMatricules);
+
+        if (uniqueMatricules.size() != playerMatricules.size()) {
+            throw new BusinessException("The same player cannot be added twice.");
+        }
+
+        Member organizer = memberRepository.findById(organizerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
+
+        if (uniqueMatricules.contains(organizer.getMatricule())) {
+            throw new BusinessException("Organizer cannot be added as invited player.");
+        }
+
+        if (!participationRepository.existsByReservationIdAndMemberId(reservationId, organizer.getId())) {
+            Participation organizerParticipation = Participation.builder()
+                    .id(UUID.randomUUID())
+                    .reservationId(reservationId)
+                    .memberId(organizer.getId())
+                    .memberName(organizer.getName())
+                    .role(ParticipationRole.ORGANIZER)
+                    .paid(false)
+                    .status(ParticipationStatus.PENDING)
+                    .build();
+
+            participationRepository.save(organizerParticipation);
+        }
+
+        long currentParticipantsCount = participationRepository.countByReservationId(reservationId);
+
+        if (currentParticipantsCount >= 4) {
+            throw new BusinessException("Private reservation already has 4 players.");
+        }
+
+        if (currentParticipantsCount + playerMatricules.size() > 4) {
+            throw new BusinessException("Too many players for this private reservation.");
+        }
+
+        for (String matricule : playerMatricules) {
+            Member player = memberRepository.findByMatricule(matricule)
+                    .orElseThrow(() -> new ResourceNotFoundException("Member not found: " + matricule));
+
+            if (participationRepository.existsByReservationIdAndMemberId(reservationId, player.getId())) {
+                throw new BusinessException("Member already added to this reservation: " + matricule);
+            }
+
+            Participation participation = Participation.builder()
+                    .id(UUID.randomUUID())
+                    .reservationId(reservationId)
+                    .memberId(player.getId())
+                    .memberName(player.getName())
+                    .role(ParticipationRole.PLAYER)
+                    .paid(false)
+                    .status(ParticipationStatus.PENDING)
+                    .build();
+
+            participationRepository.save(participation);
+        }
+
+        return participationRepository.findByReservationId(reservationId)
+                .stream()
+                .map(participationMapper::toDTO)
+                .toList();
     }
 
     public ReservationDTO applyPenaltyForIncompletePrivateReservation(UUID reservationId) {
