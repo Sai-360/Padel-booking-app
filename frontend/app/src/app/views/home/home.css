@@ -1,0 +1,284 @@
+.home-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  color: #111827;
+}
+
+.hero-card {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 32px;
+  align-items: center;
+  padding: 44px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 34%),
+    linear-gradient(135deg, #ffffff, #f8fafc);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  font-weight: 700;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+}
+
+.hero-card h1 {
+  margin: 0;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.hero-description {
+  margin: 20px 0 0;
+  max-width: 620px;
+  color: #4b5563;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+
+.hero-info {
+  display: grid;
+  gap: 16px;
+}
+
+.hero-stat {
+  padding: 24px;
+  border-radius: 22px;
+  background: white;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.stat-value {
+  display: block;
+  font-size: 34px;
+  font-weight: 800;
+  color: #1d4ed8;
+  letter-spacing: -0.03em;
+}
+
+.stat-label {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 28px;
+}
+
+.info-card,
+.feature-card {
+  border-radius: 24px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.info-card h2,
+.features-section h2,
+.rules-card h2 {
+  margin: 0 0 18px;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+}
+
+.steps {
+  display: grid;
+  gap: 18px;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.step-number {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.step h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.step p {
+  margin: 4px 0 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.warning-card {
+  background: linear-gradient(135deg, #fff7ed, #ffffff);
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+.muted {
+  margin: 0 0 18px;
+  color: #64748b;
+}
+
+.closed-day-list {
+  display: grid;
+  gap: 12px;
+}
+
+.closed-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(251, 146, 60, 0.18);
+}
+
+.closed-day strong,
+.closed-day span {
+  display: block;
+}
+
+.closed-day div span {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.closed-day.global {
+  background: rgba(254, 226, 226, 0.5);
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+.date-pill {
+  white-space: nowrap;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fed7aa;
+  color: #9a3412;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.features-section {
+  margin-top: 42px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.feature-card mat-icon {
+  width: 44px;
+  height: 44px;
+  font-size: 44px;
+  color: #2563eb;
+}
+
+.feature-card h3 {
+  margin: 16px 0 8px;
+  font-size: 18px;
+}
+
+.feature-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.rules-card {
+  margin-top: 28px;
+  padding: 28px;
+  border-radius: 26px;
+  background: #0f172a;
+  color: white;
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.22);
+}
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.rule {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rule-title {
+  display: block;
+  color: #bfdbfe;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.rule-value {
+  display: block;
+  color: #f8fafc;
+  line-height: 1.4;
+}
+
+@media (max-width: 1000px) {
+  .hero-card,
+  .section-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-grid,
+  .rules-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .home-page {
+    padding: 28px 16px 56px;
+  }
+
+  .hero-card {
+    padding: 28px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .feature-grid,
+  .rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .closed-day {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

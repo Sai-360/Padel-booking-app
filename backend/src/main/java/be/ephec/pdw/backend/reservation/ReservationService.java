@@ -272,10 +272,40 @@ public class ReservationService {
             throw new BusinessException("You cannot create a reservation in the past.");
         }
 
+        validateClosedDays(reservationDTO);
+
         switch (organizer.getType()) {
             case GLOBAL -> validateGlobalMemberBooking(daysBeforeMatch);
             case SITE -> validateSiteMemberBooking(reservationDTO, organizer, daysBeforeMatch);
             case FREE -> validateFreeMemberBooking(daysBeforeMatch);
+        }
+    }
+
+    private void validateClosedDays(ReservationDTO reservationDTO) {
+        List<LocalDate> globalClosedDays = List.of(
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 12, 25)
+        );
+
+        if (globalClosedDays.contains(reservationDTO.reservationDate())) {
+            throw new BusinessException("Reservations are not allowed on a global closed day.");
+        }
+
+        Map<UUID, List<LocalDate>> siteClosedDays = Map.of(
+                UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                List.of(LocalDate.of(2026, 6, 20)),
+
+                UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                List.of(LocalDate.of(2026, 6, 15))
+        );
+
+        List<LocalDate> closedDaysForSite = siteClosedDays.getOrDefault(
+                reservationDTO.siteId(),
+                List.of()
+        );
+
+        if (closedDaysForSite.contains(reservationDTO.reservationDate())) {
+            throw new BusinessException("Reservations are not allowed on a closed day for this site.");
         }
     }
 

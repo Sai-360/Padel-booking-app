@@ -1,1 +1,189 @@
-<p>Bienvenue dans notre centre de réservation de paddel</p>
+<div class="home-page">
+
+  <section class="hero-card">
+    <div class="hero-content">
+      <p class="eyebrow">Padel Booking App</p>
+
+      <h1>Book your padel court easily</h1>
+
+      <p class="hero-description">
+        Create private or public matches, join available public games,
+        pay your participation and follow your reservations from one place.
+      </p>
+
+      <div class="hero-actions">
+        <button mat-raised-button color="primary" routerLink="/book-court">
+          Book a Court
+        </button>
+
+        <button mat-stroked-button color="primary" routerLink="/public-matches">
+          View Public Matches
+        </button>
+      </div>
+    </div>
+
+    <div class="hero-info">
+      <div class="hero-stat">
+        <span class="stat-value">60€</span>
+        <span class="stat-label">fixed match price</span>
+      </div>
+
+      <div class="hero-stat">
+        <span class="stat-value">4</span>
+        <span class="stat-label">players per match</span>
+      </div>
+
+      <div class="hero-stat">
+        <span class="stat-value">1h30</span>
+        <span class="stat-label">match duration</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-grid">
+
+    <mat-card class="info-card">
+      <mat-card-content>
+        <h2>How it works</h2>
+
+        <div class="steps">
+          <div class="step">
+            <span class="step-number">1</span>
+            <div>
+              <h3>Choose a site</h3>
+              <p>Select Brussels or Namur and choose an available court.</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <span class="step-number">2</span>
+            <div>
+              <h3>Create or join</h3>
+              <p>Create a private/public match or join an existing public one.</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <span class="step-number">3</span>
+            <div>
+              <h3>Pay and play</h3>
+              <p>Each player pays 15€. The match price is fixed at 60€.</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="info-card warning-card">
+      <mat-card-content>
+        <h2>Closed days</h2>
+
+        <p class="muted">
+          Reservations are not allowed on the following site closing days:
+        </p>
+
+        <div class="closed-day-list">
+          <div class="closed-day">
+            <div>
+              <strong>Padel Brussels</strong>
+              <span>Site closed</span>
+            </div>
+            <span class="date-pill">20/06/2026</span>
+          </div>
+
+          <div class="closed-day">
+            <div>
+              <strong>Padel Namur</strong>
+              <span>Site closed</span>
+            </div>
+            <span class="date-pill">15/06/2026</span>
+          </div>
+
+          <div class="closed-day global">
+            <div>
+              <strong>Global closing days</strong>
+              <span>All sites closed</span>
+            </div>
+            <span class="date-pill">01/01/2026 & 25/12/2026</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </section>
+
+  <section class="features-section">
+    <h2>Main features</h2>
+
+    <div class="feature-grid">
+
+      <mat-card class="feature-card">
+        <mat-card-content>
+          <mat-icon>sports_tennis</mat-icon>
+          <h3>Public matches</h3>
+          <p>
+            Join available public matches. First paid, first served.
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="feature-card">
+        <mat-card-content>
+          <mat-icon>lock</mat-icon>
+          <h3>Private matches</h3>
+          <p>
+            Private matches must have 4 players. If incomplete, they become public.
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="feature-card">
+        <mat-card-content>
+          <mat-icon>payments</mat-icon>
+          <h3>Payments</h3>
+          <p>
+            If a public match is incomplete, the organizer receives the unpaid balance.
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="feature-card">
+        <mat-card-content>
+          <mat-icon>admin_panel_settings</mat-icon>
+          <h3>Admin dashboard</h3>
+          <p>
+            Admins can follow reservations, members, blocked users and statistics.
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+    </div>
+  </section>
+
+  <section class="rules-card">
+    <h2>Booking rules</h2>
+
+    <div class="rules-grid">
+      <div class="rule">
+        <span class="rule-title">Global member</span>
+        <span class="rule-value">up to 21 days before</span>
+      </div>
+
+      <div class="rule">
+        <span class="rule-title">Site member</span>
+        <span class="rule-value">up to 14 days before, only on own site</span>
+      </div>
+
+      <div class="rule">
+        <span class="rule-title">Free member</span>
+        <span class="rule-value">up to 5 days before</span>
+      </div>
+
+      <div class="rule">
+        <span class="rule-title">Unpaid balance</span>
+        <span class="rule-value">reservation blocked until payment</span>
+      </div>
+    </div>
+  </section>
+
+</div>
