@@ -1,73 +1,367 @@
 <div class="admin-page">
 
-  <div class="page-header">
-    <h1>Admin Dashboard</h1>
-    <p>Overview of reservations, matches and estimated revenue.</p>
-  </div>
+  <section class="admin-hero">
 
-  @if (loading) {
-    <p>Loading dashboard...</p>
-  }
+    <div>
+      <span class="admin-eyebrow">Admin dashboard</span>
 
-  @if (errorMessage) {
+      <h1>Manage reservations and members.</h1>
+
+      <p>
+        Protected overview for reservations, public and private matches, members, balances and admin scope.
+      </p>
+    </div>
+
+    <div class="admin-session-card">
+      <div class="admin-avatar">
+        <mat-icon>admin_panel_settings</mat-icon>
+      </div>
+
+      <div>
+        <small>Connected admin</small>
+        <strong>{{ getCurrentAdminName() }}</strong>
+        <span>{{ getCurrentAdminRoleLabel() }} · {{ getAdminScopeLabel() }}</span>
+      </div>
+    </div>
+
+  </section>
+
+  @if (errorMessage || memberErrorMessage) {
     <div class="admin-error">
-      {{ errorMessage }}
+      <mat-icon>error</mat-icon>
+
+      <div>
+        @if (errorMessage) {
+          <p>{{ errorMessage }}</p>
+        }
+
+        @if (memberErrorMessage) {
+          <p>{{ memberErrorMessage }}</p>
+        }
+      </div>
     </div>
   }
 
-  <div class="stats-grid">
+  <section class="stats-grid">
 
     <mat-card class="stat-card">
       <mat-card-content>
-        <span class="stat-label">Total reservations</span>
-        <strong>{{ getTotalReservations() }}</strong>
+        <div class="stat-icon blue">
+          <mat-icon>calendar_month</mat-icon>
+        </div>
+
+        <div>
+          <span class="stat-label">Reservations</span>
+          <strong>{{ getTotalReservations() }}</strong>
+        </div>
       </mat-card-content>
     </mat-card>
 
     <mat-card class="stat-card">
       <mat-card-content>
-        <span class="stat-label">Active reservations</span>
-        <strong>{{ getActiveReservationsCount() }}</strong>
+        <div class="stat-icon green">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+
+        <div>
+          <span class="stat-label">Active</span>
+          <strong>{{ getActiveReservationsCount() }}</strong>
+        </div>
       </mat-card-content>
     </mat-card>
 
     <mat-card class="stat-card">
       <mat-card-content>
-        <span class="stat-label">Public matches</span>
-        <strong>{{ getPublicReservationsCount() }}</strong>
+        <div class="stat-icon violet">
+          <mat-icon>groups</mat-icon>
+        </div>
+
+        <div>
+          <span class="stat-label">Public / Private</span>
+          <strong>{{ getPublicReservationsCount() }} / {{ getPrivateReservationsCount() }}</strong>
+        </div>
       </mat-card-content>
     </mat-card>
 
     <mat-card class="stat-card">
       <mat-card-content>
-        <span class="stat-label">Private matches</span>
-        <strong>{{ getPrivateReservationsCount() }}</strong>
+        <div class="stat-icon orange">
+          <mat-icon>person</mat-icon>
+        </div>
+
+        <div>
+          <span class="stat-label">Members</span>
+          <strong>{{ getTotalMembers() }}</strong>
+        </div>
       </mat-card-content>
     </mat-card>
 
     <mat-card class="stat-card revenue-card">
       <mat-card-content>
-        <span class="stat-label">Estimated revenue</span>
-        <strong>{{ getEstimatedRevenue() }} €</strong>
+        <div class="stat-icon dark">
+          <mat-icon>payments</mat-icon>
+        </div>
+
+        <div>
+          <span class="stat-label">Estimated revenue</span>
+          <strong>{{ getEstimatedRevenueLabel() }}</strong>
+        </div>
       </mat-card-content>
     </mat-card>
 
-  </div>
+  </section>
 
-  <div class="section-header">
-    <h2>Reservations</h2>
-    <p>Current state of all matches.</p>
-  </div>
+  <section class="insight-grid">
 
-  <div class="reservation-list">
-    @for (reservation of reservations; track reservation.id) {
-      <app-reservation-card
-        [reservations]="reservation"
-        (reservationUpdated)="loadReservations()">
-      </app-reservation-card>
-    } @empty {
-      <p>No reservations found.</p>
+    <mat-card class="insight-card">
+      <mat-card-content>
+        <small>Total participants</small>
+        <strong>{{ getTotalParticipantsCount() }}</strong>
+        <p>Players already linked to reservations.</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="insight-card">
+      <mat-card-content>
+        <small>Average players</small>
+        <strong>{{ getAveragePlayersLabel() }}</strong>
+        <p>Average participants per reservation.</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="insight-card warning">
+      <mat-card-content>
+        <small>Members with balance</small>
+        <strong>{{ getMembersWithBalanceCount() }}</strong>
+        <p>Members with unpaid balance.</p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="insight-card danger">
+      <mat-card-content>
+        <small>Blocked members</small>
+        <strong>{{ getBlockedMembersCount() }}</strong>
+        <p>Members currently blocked.</p>
+      </mat-card-content>
+    </mat-card>
+
+  </section>
+
+  <section class="admin-section">
+
+    <div class="section-header">
+      <div>
+        <span>Reservations</span>
+        <h2>Match overview</h2>
+        <p>Filter and review the reservations visible for the connected admin.</p>
+      </div>
+
+      <button mat-stroked-button type="button" class="refresh-button" (click)="loadReservations()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        type="button"
+        [class.active]="reservationFilter === 'ALL'"
+        (click)="setReservationFilter('ALL')"
+      >
+        All
+      </button>
+
+      <button
+        type="button"
+        [class.active]="reservationFilter === 'ACTIVE'"
+        (click)="setReservationFilter('ACTIVE')"
+      >
+        Active
+      </button>
+
+      <button
+        type="button"
+        [class.active]="reservationFilter === 'PUBLIC'"
+        (click)="setReservationFilter('PUBLIC')"
+      >
+        Public
+      </button>
+
+      <button
+        type="button"
+        [class.active]="reservationFilter === 'PRIVATE'"
+        (click)="setReservationFilter('PRIVATE')"
+      >
+        Private
+      </button>
+
+      <button
+        type="button"
+        [class.active]="reservationFilter === 'PAST'"
+        (click)="setReservationFilter('PAST')"
+      >
+        Past
+      </button>
+    </div>
+
+    @if (loadingReservations) {
+      <div class="state-card">
+        <div class="state-icon loading"></div>
+        <h3>Loading reservations...</h3>
+        <p>Please wait while the dashboard is refreshed.</p>
+      </div>
+    } @else {
+      <div class="reservation-list">
+        @for (reservation of getFilteredReservations(); track reservation.id) {
+          <app-reservation-card
+            [reservations]="reservation"
+            (reservationUpdated)="loadReservations()">
+          </app-reservation-card>
+        } @empty {
+          <div class="state-card empty">
+            <div class="state-icon">
+              <mat-icon>event_busy</mat-icon>
+            </div>
+
+            <h3>No reservations found</h3>
+            <p>No reservation matches the selected filter.</p>
+          </div>
+        }
+      </div>
     }
-  </div>
+
+  </section>
+
+  <section class="admin-section members-section">
+
+    <div class="section-header">
+      <div>
+        <span>Members</span>
+        <h2>Member overview</h2>
+        <p>Review member status, roles, balances and blocked accounts.</p>
+      </div>
+
+      <button mat-stroked-button type="button" class="refresh-button" (click)="loadMembers()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        type="button"
+        [class.active]="memberFilter === 'ALL'"
+        (click)="setMemberFilter('ALL')"
+      >
+        All
+      </button>
+
+      <button
+        type="button"
+        [class.active]="memberFilter === 'ADMINS'"
+        (click)="setMemberFilter('ADMINS')"
+      >
+        Admins
+      </button>
+
+      <button
+        type="button"
+        [class.active]="memberFilter === 'BALANCE'"
+        (click)="setMemberFilter('BALANCE')"
+      >
+        Balance
+      </button>
+
+      <button
+        type="button"
+        [class.active]="memberFilter === 'BLOCKED'"
+        (click)="setMemberFilter('BLOCKED')"
+      >
+        Blocked
+      </button>
+    </div>
+
+    @if (loadingMembers) {
+      <div class="state-card">
+        <div class="state-icon loading"></div>
+        <h3>Loading members...</h3>
+        <p>Please wait while members are refreshed.</p>
+      </div>
+    } @else {
+      <div class="members-grid">
+        @for (member of getFilteredMembers(); track member.id) {
+          <mat-card class="member-card">
+            <mat-card-content>
+
+              <div class="member-top">
+                <div class="member-avatar">
+                  {{ getMemberInitials(member) }}
+                </div>
+
+                <div class="member-main">
+                  <div class="member-title">
+                    <h3>{{ member.name }}</h3>
+
+                    <span
+                      class="member-status"
+                      [class.warning]="member.unpaidBalance > 0"
+                      [class.blocked]="isMemberBlocked(member)"
+                    >
+                      {{ getMemberStatusLabel(member) }}
+                    </span>
+                  </div>
+
+                  <p>{{ member.matricule }}</p>
+
+                  <div class="member-tags">
+                    <span>{{ getMemberTypeLabel(member) }}</span>
+
+                    @if (isMemberAdmin(member)) {
+                      <span class="admin-tag">
+                        {{ getMemberAdminRoleLabel(member) }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="member-info-grid">
+                <div>
+                  <small>Balance</small>
+                  <strong>{{ getMemberBalanceLabel(member) }}</strong>
+                </div>
+
+                <div>
+                  <small>Blocked until</small>
+                  <strong>{{ member.blockedUntil || 'Not blocked' }}</strong>
+                </div>
+
+                <div>
+                  <small>Site ID</small>
+                  <strong>{{ member.siteId || 'All sites' }}</strong>
+                </div>
+
+                <div>
+                  <small>Admin role</small>
+                  <strong>{{ getMemberAdminRoleLabel(member) }}</strong>
+                </div>
+              </div>
+
+            </mat-card-content>
+          </mat-card>
+        } @empty {
+          <div class="state-card empty">
+            <div class="state-icon">
+              <mat-icon>person_off</mat-icon>
+            </div>
+
+            <h3>No members found</h3>
+            <p>No member matches the selected filter.</p>
+          </div>
+        }
+      </div>
+    }
+
+  </section>
 
 </div>

@@ -1,41 +1,242 @@
 <div class="profile-page">
 
-  <div class="page-header">
-    <h1>My Profile</h1>
-    <p>Your member information and reservation status.</p>
-  </div>
+  <section class="profile-hero">
+    <div>
+      <span class="profile-eyebrow">My account</span>
 
-  <mat-card class="profile-card">
-    <mat-card-header>
-      <mat-card-title>{{ user.name }}</mat-card-title>
-      <mat-card-subtitle>{{ user.matricule }}</mat-card-subtitle>
-    </mat-card-header>
+      <h1>Profile and booking access</h1>
 
-    <mat-card-content>
-      <div class="profile-info">
+      <p>
+        Check your membership, booking permissions, payment status and admin access.
+      </p>
+    </div>
 
-        <div class="info-row">
-          <span class="label">Member Type</span>
-          <span class="value">{{ user.type }}</span>
-        </div>
+    <a routerLink="/book" class="book-button">
+      Book a court
+    </a>
+  </section>
 
-        <div class="info-row">
-          <span class="label">Site</span>
-          <span class="value">{{ user.siteId || 'All sites' }}</span>
-        </div>
+  @if (!user) {
+    <div class="state-card error">
+      <div class="state-icon">
+        <mat-icon>lock</mat-icon>
+      </div>
 
-        <div class="info-row">
-          <span class="label">Unpaid Balance</span>
-          <span class="value">{{ user.unpaidBalance }} €</span>
-        </div>
+      <h3>Login required</h3>
+      <p>{{ profileError }}</p>
 
-        <div class="info-row">
-          <span class="label">Blocked Until</span>
-          <span class="value">{{ user.blockedUntil || 'Not blocked' }}</span>
-        </div>
+      <a routerLink="/login" class="state-action">
+        Go to login
+      </a>
+    </div>
+  } @else {
+    <section class="profile-grid">
+
+      <mat-card class="profile-card main-profile-card">
+        <mat-card-content>
+
+          <div class="identity-section">
+
+            <div class="avatar">
+              {{ getInitials() }}
+            </div>
+
+            <div class="identity-text">
+              <div class="identity-title">
+                <h2>{{ user.name }}</h2>
+
+                <span
+                  class="status-badge"
+                  [class.warning]="hasUnpaidBalance()"
+                  [class.blocked]="isBlocked()"
+                >
+                  {{ getStatusLabel() }}
+                </span>
+              </div>
+
+              <p>{{ user.matricule }}</p>
+
+              <div class="profile-tags">
+                <span>{{ getMemberTypeLabel() }}</span>
+
+                @if (isAdmin()) {
+                  <span class="admin-tag">{{ getAdminRoleLabel() }}</span>
+                }
+              </div>
+            </div>
+
+          </div>
+
+          <div class="status-box" [class.warning]="hasUnpaidBalance()" [class.blocked]="isBlocked()">
+            <mat-icon>
+              @if (isBlocked()) {
+                block
+              } @else if (hasUnpaidBalance()) {
+                payments
+              } @else {
+                check_circle
+              }
+            </mat-icon>
+
+            <div>
+              <strong>{{ getStatusLabel() }}</strong>
+              <p>{{ getStatusDescription() }}</p>
+            </div>
+          </div>
+
+          @if (paymentMessage) {
+            <div class="profile-success">
+              {{ paymentMessage }}
+            </div>
+          }
+
+          @if (profileError) {
+            <div class="profile-error">
+              {{ profileError }}
+            </div>
+          }
+
+          <div class="profile-info-grid">
+
+            <div class="info-card">
+              <small>Member type</small>
+              <strong>{{ getMemberTypeLabel() }}</strong>
+            </div>
+
+            <div class="info-card">
+              <small>Matricule</small>
+              <strong>{{ user.matricule }}</strong>
+            </div>
+
+            <div class="info-card">
+              <small>Site access</small>
+              <strong>{{ getSiteAccessLabel() }}</strong>
+            </div>
+
+            <div class="info-card">
+              <small>Admin role</small>
+              <strong>{{ getAdminRoleLabel() }}</strong>
+            </div>
+
+            <div class="info-card">
+              <small>Unpaid balance</small>
+              <strong>{{ getBalanceLabel() }}</strong>
+            </div>
+
+            <div class="info-card">
+              <small>Blocked until</small>
+              <strong>{{ getBlockedUntilLabel() }}</strong>
+            </div>
+
+          </div>
+
+          <div class="profile-actions">
+
+            @if (hasUnpaidBalance()) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                class="pay-button"
+                [disabled]="isPayingBalance"
+                (click)="payBalance()"
+              >
+                @if (isPayingBalance) {
+                  Paying...
+                } @else {
+                  Pay balance
+                }
+              </button>
+            }
+
+            <a mat-stroked-button routerLink="/my-reservations" class="secondary-button">
+              My reservations
+            </a>
+
+            @if (isAdmin()) {
+              <a mat-stroked-button routerLink="/admin" class="admin-button">
+                Admin dashboard
+              </a>
+            }
+
+          </div>
+
+        </mat-card-content>
+      </mat-card>
+
+      <div class="side-column">
+
+        <mat-card class="profile-card access-card">
+          <mat-card-content>
+
+            <div class="side-card-header">
+              <div class="side-icon blue">
+                <mat-icon>event_available</mat-icon>
+              </div>
+
+              <div>
+                <span>Booking access</span>
+                <h3>Your reservation rules</h3>
+              </div>
+            </div>
+
+            <div class="access-list">
+
+              <div class="access-row">
+                <small>Booking window</small>
+                <strong>{{ getBookingWindowLabel() }}</strong>
+              </div>
+
+              <div class="access-row">
+                <small>Allowed sites</small>
+                <strong>{{ getSiteAccessLabel() }}</strong>
+              </div>
+
+              <div class="access-row">
+                <small>Match size</small>
+                <strong>
+                  @if (bookingRule) {
+                    {{ bookingRule.maxPlayers }} players
+                  } @else {
+                    Rules loading...
+                  }
+                </strong>
+              </div>
+
+              <div class="access-row">
+                <small>Penalty per missing player</small>
+                <strong>{{ getPenaltyLabel() }}</strong>
+              </div>
+
+            </div>
+
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="profile-card explanation-card">
+          <mat-card-content>
+
+            <div class="side-card-header">
+              <div class="side-icon green">
+                <mat-icon>verified</mat-icon>
+              </div>
+
+              <div>
+                <span>Backend validation</span>
+                <h3>Security and rules</h3>
+              </div>
+            </div>
+
+            <p>
+              The frontend displays your profile and booking limits, but the backend keeps the final control for booking rules, site access, unpaid balances and admin permissions.
+            </p>
+
+          </mat-card-content>
+        </mat-card>
 
       </div>
-    </mat-card-content>
-  </mat-card>
+
+    </section>
+  }
 
 </div>
