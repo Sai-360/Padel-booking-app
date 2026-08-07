@@ -1,189 +1,388 @@
 <div class="home-page">
 
-  <section class="hero-card">
+  <section class="hero-section">
+
     <div class="hero-content">
-      <p class="eyebrow">Padel Booking App</p>
+      <span class="hero-eyebrow">Padel booking platform</span>
 
-      <h1>Book your padel court easily</h1>
+      <h1>Book, join and manage your padel matches.</h1>
 
-      <p class="hero-description">
-        Create private or public matches, join available public games,
-        pay your participation and follow your reservations from one place.
+      <p>
+        Create public or private reservations, join available matches, manage payments and follow your bookings from one clean interface.
       </p>
 
       <div class="hero-actions">
-        <button mat-raised-button color="primary" routerLink="/book-court">
-          Book a Court
-        </button>
+        <a mat-flat-button routerLink="/book" class="primary-cta">
+          <mat-icon>event_available</mat-icon>
+          Book a court
+        </a>
 
-        <button mat-stroked-button color="primary" routerLink="/public-matches">
-          View Public Matches
-        </button>
+        <a mat-stroked-button routerLink="/public-matches" class="secondary-cta">
+          <mat-icon>groups</mat-icon>
+          View public matches
+        </a>
+      </div>
+
+      <div class="hero-trust">
+        <span>
+          <mat-icon>verified</mat-icon>
+          Backend-validated rules
+        </span>
+
+        <span>
+          <mat-icon>security</mat-icon>
+          Admin routes secured
+        </span>
+
+        <span>
+          <mat-icon>calendar_month</mat-icon>
+          Closed days blocked
+        </span>
       </div>
     </div>
 
-    <div class="hero-info">
-      <div class="hero-stat">
-        <span class="stat-value">60€</span>
-        <span class="stat-label">fixed match price</span>
+    <div class="hero-panel">
+
+      <div class="mini-calendar-card">
+        <div class="mini-calendar-header">
+          <div>
+            <small>Next booking</small>
+            <strong>Ready to reserve</strong>
+          </div>
+
+          <span class="live-pill">
+            <span></span>
+            Live rules
+          </span>
+        </div>
+
+        <div class="mini-court">
+          <div class="court-line top"></div>
+          <div class="court-net"></div>
+          <div class="court-line bottom"></div>
+          <mat-icon>sports_tennis</mat-icon>
+        </div>
+
+        <div class="quick-summary">
+          <div>
+            <small>Match price</small>
+            <strong>{{ getMatchPriceLabel() }}</strong>
+          </div>
+
+          <div>
+            <small>Players</small>
+            <strong>{{ getMaxPlayersLabel() }}</strong>
+          </div>
+        </div>
       </div>
 
-      <div class="hero-stat">
-        <span class="stat-value">4</span>
-        <span class="stat-label">players per match</span>
-      </div>
-
-      <div class="hero-stat">
-        <span class="stat-value">1h30</span>
-        <span class="stat-label">match duration</span>
-      </div>
     </div>
+
   </section>
 
-  <section class="section-grid">
+  @if (overviewError) {
+    <section class="overview-error">
+      <mat-icon>error</mat-icon>
+      <div>
+        <strong>Overview could not be loaded</strong>
+        <p>{{ overviewError }}</p>
+      </div>
 
-    <mat-card class="info-card">
+      <button type="button" (click)="loadHomeOverview()">
+        Retry
+      </button>
+    </section>
+  }
+
+  <section class="stats-grid">
+
+    <div class="stat-card">
+      <span class="stat-icon blue">
+        <mat-icon>payments</mat-icon>
+      </span>
+
+      <div>
+        <small>Match price</small>
+        <strong>{{ getMatchPriceLabel() }}</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon green">
+        <mat-icon>person</mat-icon>
+      </span>
+
+      <div>
+        <small>Price per player</small>
+        <strong>{{ getPerPlayerPriceLabel() }}</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon violet">
+        <mat-icon>schedule</mat-icon>
+      </span>
+
+      <div>
+        <small>Match duration</small>
+        <strong>{{ getMatchDurationLabel() }}</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon orange">
+        <mat-icon>location_on</mat-icon>
+      </span>
+
+      <div>
+        <small>Available clubs</small>
+        <strong>{{ getSitesLabel() }}</strong>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="content-grid">
+
+    <mat-card class="section-card steps-card">
       <mat-card-content>
-        <h2>How it works</h2>
 
-        <div class="steps">
-          <div class="step">
-            <span class="step-number">1</span>
-            <div>
-              <h3>Choose a site</h3>
-              <p>Select Brussels or Namur and choose an available court.</p>
-            </div>
-          </div>
-
-          <div class="step">
-            <span class="step-number">2</span>
-            <div>
-              <h3>Create or join</h3>
-              <p>Create a private/public match or join an existing public one.</p>
-            </div>
-          </div>
-
-          <div class="step">
-            <span class="step-number">3</span>
-            <div>
-              <h3>Pay and play</h3>
-              <p>Each player pays 15€. The match price is fixed at 60€.</p>
-            </div>
-          </div>
+        <div class="section-heading">
+          <span>How it works</span>
+          <h2>A simple booking flow</h2>
+          <p>
+            The user chooses a site, selects a slot and confirms. The backend keeps the final control.
+          </p>
         </div>
+
+        <div class="steps-list">
+
+          <div class="step-item">
+            <div class="step-number">1</div>
+
+            <div>
+              <h3>Choose your site and court</h3>
+              <p>
+                Sites and courts are loaded from the backend, not hardcoded in the frontend.
+              </p>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-number">2</div>
+
+            <div>
+              <h3>Select a valid date</h3>
+              <p>
+                Past dates, closed days and dates outside your membership limit are blocked.
+              </p>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-number">3</div>
+
+            <div>
+              <h3>Confirm and manage</h3>
+              <p>
+                Public matches can be joined by other players. Private matches can receive invited players.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="info-card warning-card">
+    <mat-card class="section-card rules-card">
       <mat-card-content>
-        <h2>Closed days</h2>
 
-        <p class="muted">
-          Reservations are not allowed on the following site closing days:
-        </p>
-
-        <div class="closed-day-list">
-          <div class="closed-day">
-            <div>
-              <strong>Padel Brussels</strong>
-              <span>Site closed</span>
-            </div>
-            <span class="date-pill">20/06/2026</span>
-          </div>
-
-          <div class="closed-day">
-            <div>
-              <strong>Padel Namur</strong>
-              <span>Site closed</span>
-            </div>
-            <span class="date-pill">15/06/2026</span>
-          </div>
-
-          <div class="closed-day global">
-            <div>
-              <strong>Global closing days</strong>
-              <span>All sites closed</span>
-            </div>
-            <span class="date-pill">01/01/2026 & 25/12/2026</span>
-          </div>
+        <div class="section-heading">
+          <span>Booking rules</span>
+          <h2>Rules loaded from backend</h2>
+          <p>
+            Price, maximum players and booking limits come from the Spring Boot API.
+          </p>
         </div>
+
+        <div class="rules-list">
+
+          <div class="rule-row">
+            <small>Global member</small>
+            <strong>
+              @if (bookingRule) {
+                {{ bookingRule.globalBookingLimitDays }} days before
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+          <div class="rule-row">
+            <small>Site member</small>
+            <strong>
+              @if (bookingRule) {
+                {{ bookingRule.siteBookingLimitDays }} days before
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+          <div class="rule-row">
+            <small>Free member</small>
+            <strong>
+              @if (bookingRule) {
+                {{ bookingRule.freeBookingLimitDays }} days before
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+          <div class="rule-row">
+            <small>Booking windows</small>
+            <strong>{{ getBookingWindowLabel() }}</strong>
+          </div>
+
+        </div>
+
       </mat-card-content>
     </mat-card>
+
+  </section>
+
+  <section class="closed-days-section">
+
+    <div class="section-heading wide">
+      <span>Closed days</span>
+      <h2>Know when clubs are unavailable</h2>
+      <p>
+        Closed days are loaded from the backend and disabled directly in the booking calendar.
+      </p>
+    </div>
+
+    <div class="closed-sites-grid">
+
+      @for (siteClosedDays of closedDaysBySite; track siteClosedDays.siteId) {
+        <div class="closed-site-card">
+
+          <div class="closed-site-header">
+            <div>
+              <small>Club</small>
+              <strong>{{ siteClosedDays.siteName }}</strong>
+            </div>
+
+            <mat-icon>event_busy</mat-icon>
+          </div>
+
+          @if (getUpcomingClosedDays(siteClosedDays.closedDays).length > 0) {
+            <div class="closed-day-pills">
+              @for (closedDay of getUpcomingClosedDays(siteClosedDays.closedDays).slice(0, 4); track closedDay) {
+                <span>{{ formatDateForDisplay(closedDay) }}</span>
+              }
+
+              @if (getUpcomingClosedDays(siteClosedDays.closedDays).length > 4) {
+                <span>
+                  +{{ getUpcomingClosedDays(siteClosedDays.closedDays).length - 4 }} more
+                </span>
+              }
+            </div>
+          } @else {
+            <p class="no-closed-days">
+              No upcoming closed days.
+            </p>
+          }
+
+        </div>
+      } @empty {
+        <div class="closed-site-card">
+          <div class="closed-site-header">
+            <div>
+              <small>Closed days</small>
+              <strong>No site data loaded</strong>
+            </div>
+
+            <mat-icon>event_busy</mat-icon>
+          </div>
+
+          <p class="no-closed-days">
+            Closed days will appear here when the backend returns them.
+          </p>
+        </div>
+      }
+
+    </div>
 
   </section>
 
   <section class="features-section">
-    <h2>Main features</h2>
+
+    <div class="section-heading wide">
+      <span>Main features</span>
+      <h2>Everything needed for the project demo</h2>
+      <p>
+        The application now shows a clearer user journey and a stronger separation between frontend comfort and backend validation.
+      </p>
+    </div>
 
     <div class="feature-grid">
 
       <mat-card class="feature-card">
         <mat-card-content>
-          <mat-icon>sports_tennis</mat-icon>
+          <div class="feature-icon">
+            <mat-icon>sports_tennis</mat-icon>
+          </div>
+
           <h3>Public matches</h3>
           <p>
-            Join available public matches. First paid, first served.
+            Members can join available public matches while the backend prevents invalid joins.
           </p>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="feature-card">
         <mat-card-content>
-          <mat-icon>lock</mat-icon>
+          <div class="feature-icon">
+            <mat-icon>lock</mat-icon>
+          </div>
+
           <h3>Private matches</h3>
           <p>
-            Private matches must have 4 players. If incomplete, they become public.
+            Organizers can invite players by matricule and complete the match.
           </p>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="feature-card">
         <mat-card-content>
-          <mat-icon>payments</mat-icon>
+          <div class="feature-icon">
+            <mat-icon>payments</mat-icon>
+          </div>
+
           <h3>Payments</h3>
           <p>
-            If a public match is incomplete, the organizer receives the unpaid balance.
+            Players can pay their participation and unpaid balances are visible.
           </p>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="feature-card">
         <mat-card-content>
-          <mat-icon>admin_panel_settings</mat-icon>
+          <div class="feature-icon">
+            <mat-icon>admin_panel_settings</mat-icon>
+          </div>
+
           <h3>Admin dashboard</h3>
           <p>
-            Admins can follow reservations, members, blocked users and statistics.
+            Admin pages are protected with JWT, guard, interceptor and backend route security.
           </p>
         </mat-card-content>
       </mat-card>
 
     </div>
-  </section>
 
-  <section class="rules-card">
-    <h2>Booking rules</h2>
-
-    <div class="rules-grid">
-      <div class="rule">
-        <span class="rule-title">Global member</span>
-        <span class="rule-value">up to 21 days before</span>
-      </div>
-
-      <div class="rule">
-        <span class="rule-title">Site member</span>
-        <span class="rule-value">up to 14 days before, only on own site</span>
-      </div>
-
-      <div class="rule">
-        <span class="rule-title">Free member</span>
-        <span class="rule-value">up to 5 days before</span>
-      </div>
-
-      <div class="rule">
-        <span class="rule-title">Unpaid balance</span>
-        <span class="rule-value">reservation blocked until payment</span>
-      </div>
-    </div>
   </section>
 
 </div>

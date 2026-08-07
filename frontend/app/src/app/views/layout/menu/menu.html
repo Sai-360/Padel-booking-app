@@ -1,6 +1,95 @@
-<a routerLink="home"  (click)="layoutService.toggleMenuWhenClick()" mat-list-item>Home</a>
-<a routerLink="book" (click)="layoutService.toggleMenuWhenClick()" mat-list-item>Book a Court</a>
-<a routerLink="public-matches" (click)="layoutService.toggleMenuWhenClick()" mat-list-item>Public Matches</a>
-<a routerLink="my-reservations" (click)="layoutService.toggleMenuWhenClick()" mat-list-item>My Reservations</a>
-<a routerLink="profile" (click)="layoutService.toggleMenuWhenClick()" mat-list-item>My Profile</a>
+<nav class="side-menu">
 
+  <div class="menu-brand">
+    <div class="menu-logo">
+      P
+    </div>
+
+    <div>
+      <strong>Padel</strong>
+      <span>Booking app</span>
+    </div>
+  </div>
+
+  <div class="menu-section">
+    <span class="menu-section-title">Main menu</span>
+
+    <a
+      routerLink="/home"
+      routerLinkActive="active"
+      (click)="layoutService.toggleMenuWhenClick()"
+      class="menu-link"
+    >
+      <mat-icon>home</mat-icon>
+      <span>Home</span>
+    </a>
+
+    <a
+      routerLink="/book"
+      routerLinkActive="active"
+      (click)="layoutService.toggleMenuWhenClick()"
+      class="menu-link"
+    >
+      <mat-icon>event_available</mat-icon>
+      <span>Book a Court</span>
+    </a>
+
+    <a
+      routerLink="/public-matches"
+      routerLinkActive="active"
+      (click)="layoutService.toggleMenuWhenClick()"
+      class="menu-link"
+    >
+      <mat-icon>groups</mat-icon>
+      <span>Public Matches</span>
+    </a>
+
+    <a
+      routerLink="/my-reservations"
+      routerLinkActive="active"
+      (click)="layoutService.toggleMenuWhenClick()"
+      class="menu-link"
+    >
+      <mat-icon>calendar_month</mat-icon>
+      <span>My Reservations</span>
+    </a>
+
+    <a
+      routerLink="/profile"
+      routerLinkActive="active"
+      (click)="layoutService.toggleMenuWhenClick()"
+      class="menu-link"
+    >
+      <mat-icon>account_circle</mat-icon>
+      <span>My Profile</span>
+    </a>
+  </div>
+
+  @if (isAdminLoggedIn()) {
+    <div class="menu-section admin-section">
+      <span class="menu-section-title">Administration</span>
+
+      <a
+        routerLink="/admin"
+        routerLinkActive="active"
+        (click)="layoutService.toggleMenuWhenClick()"
+        class="menu-link admin-link"
+      >
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span>Admin Dashboard</span>
+      </a>
+    </div>
+  }
+
+  <div class="menu-footer">
+    <div class="menu-footer-icon">
+      <mat-icon>verified</mat-icon>
+    </div>
+
+    <div>
+      <strong>Backend checked</strong>
+      <span>Rules, price and security are validated server-side.</span>
+    </div>
+  </div>
+
+</nav>

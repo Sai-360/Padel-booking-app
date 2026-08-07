@@ -1,17 +1,26 @@
-import {Component, inject} from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { LayoutService } from '../layout.service';
+import { AdminAuthService } from '../../../shared/services/admin-auth.service';
 
-import {RouterLink} from '@angular/router';
-import {MatListItem} from '@angular/material/list';
-import {LayoutService} from '../layout.service';
 @Component({
   selector: 'app-menu',
-  imports: [ RouterLink, MatListItem],
+  standalone: true,
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    MatIconModule
+  ],
   templateUrl: './menu.html',
-  styleUrl: './menu.css',
-  standalone: true
+  styleUrl: './menu.css'
 })
 export class Menu {
 
   layoutService = inject(LayoutService);
+  private adminAuthService = inject(AdminAuthService);
 
+  isAdminLoggedIn(): boolean {
+    return this.adminAuthService.isAdminLoggedIn();
+  }
 }
