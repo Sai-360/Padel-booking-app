@@ -34,4 +34,8 @@ export class BookingRuleApiService {
   getTimeSlotsBySite(siteId: string): Observable<TimeSlotDTO[]> {
     return this.http.get<TimeSlotDTO[]>(`${this.apiUrl}/time-slots?siteId=${siteId}`);
   }
+
+  getClosedDaysBySite(siteId: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/closed-days?siteId=${siteId}`);
+  }
 }

@@ -1,10 +1,11 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatError, MatFormFieldModule, MatHint, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormFieldModule, MatLabel } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCard, MatCardContent } from '@angular/material/card';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 
 import { Reservation } from '../../../model/Reservations';
 import { uuid } from '../../../shared/uuid';
@@ -27,8 +28,8 @@ import {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatDatepickerModule,
     MatError,
-    MatHint,
     MatLabel,
     MatCardContent,
     MatCard
@@ -50,6 +51,12 @@ export class ReservationCreation implements OnInit {
 
   bookingRule: BookingRuleDTO | null = null;
 
+  closedDays: string[] = [];
+  private closedDaySet = new Set<string>();
+
+  minDate = this.getStartOfToday();
+  maxDate = this.addDays(this.getStartOfToday(), 5);
+
   bookingError = '';
   bookingSuccess = '';
   isSubmitting = false;
@@ -66,8 +73,7 @@ export class ReservationCreation implements OnInit {
       nonNullable: true,
       validators: [Validators.required]
     }),
-    date: new FormControl<string>('', {
-      nonNullable: true,
+    date: new FormControl<Date | null>(null, {
       validators: [Validators.required]
     }),
     time: new FormControl<string>('', {
@@ -84,20 +90,35 @@ export class ReservationCreation implements OnInit {
     })
   });
 
+  availableDateFilter = (date: Date | null): boolean => {
+    if (!date) {
+      return false;
+    }
+
+    const backendDate = this.formatDateForBackend(date);
+
+    return !this.closedDaySet.has(backendDate);
+  };
+
   ngOnInit(): void {
+    this.updateDateLimits();
     this.loadBookingRules();
     this.loadSites();
 
     this.form.controls.siteId.valueChanges.subscribe((siteId: string) => {
       this.form.controls.courtId.setValue('');
       this.form.controls.time.setValue('');
+      this.form.controls.date.setValue(null);
 
       if (siteId) {
         this.loadCourtsBySite(siteId);
         this.loadTimeSlotsBySite(siteId);
+        this.loadClosedDaysBySite(siteId);
       } else {
         this.courts = [];
         this.timeSlots = [];
+        this.closedDays = [];
+        this.closedDaySet = new Set<string>();
       }
     });
   }
@@ -109,6 +130,7 @@ export class ReservationCreation implements OnInit {
       next: (rule: BookingRuleDTO) => {
         this.bookingRule = rule;
         this.form.controls.price.setValue(rule.matchPrice);
+        this.updateDateLimits();
       },
       error: (error) => {
         this.bookingError = 'Unable to load booking rules.';
@@ -180,6 +202,27 @@ export class ReservationCreation implements OnInit {
     });
   }
 
+  private loadClosedDaysBySite(siteId: string): void {
+    this.bookingRuleApiService.getClosedDaysBySite(siteId).subscribe({
+      next: (closedDays: string[]) => {
+        this.closedDays = closedDays;
+        this.closedDaySet = new Set<string>(closedDays);
+
+        const selectedDate = this.form.controls.date.value;
+
+        if (selectedDate && this.closedDaySet.has(this.formatDateForBackend(selectedDate))) {
+          this.form.controls.date.setValue(null);
+        }
+
+        this.form.controls.date.updateValueAndValidity();
+      },
+      error: (error) => {
+        this.bookingError = 'Unable to load closed days for this site.';
+        console.error('Error loading closed days', error);
+      }
+    });
+  }
+
   addReservation(): void {
     this.bookingError = '';
     this.bookingSuccess = '';
@@ -194,12 +237,18 @@ export class ReservationCreation implements OnInit {
     }
 
     const currentUser = this.userService.getCurrentUser();
+    const selectedDate = this.form.controls.date.value;
+
+    if (!selectedDate) {
+      this.bookingError = 'Please select a reservation date.';
+      return;
+    }
 
     const reservation: Reservation = {
       id: uuid(),
       siteId: this.form.controls.siteId.value,
       courtId: this.form.controls.courtId.value,
-      date: this.form.controls.date.value,
+      date: this.formatDateForBackend(selectedDate),
       time: this.form.controls.time.value,
       type: this.form.controls.type.value,
       organizerId: currentUser.id,
@@ -222,7 +271,7 @@ export class ReservationCreation implements OnInit {
         this.form.reset({
           siteId: currentSiteId,
           courtId: currentCourtId,
-          date: '',
+          date: null,
           time: '',
           type: 'PUBLIC',
           price: currentPrice
@@ -246,16 +295,29 @@ export class ReservationCreation implements OnInit {
       return false;
     }
 
-    const currentUser = this.userService.getCurrentUser();
-    const selectedDateValue = this.form.controls.date.value;
+    const currentUser = this.userService.getCurrentUserOrNull();
+
+    if (!currentUser) {
+      this.bookingError = 'Please login before booking a court.';
+      return false;
+    }
+
+    const selectedDate = this.form.controls.date.value;
     const selectedSiteId = this.form.controls.siteId.value;
 
-    if (!selectedDateValue) {
+    if (!selectedDate) {
       this.bookingError = 'Please select a reservation date.';
       return false;
     }
 
-    const daysBeforeMatch = this.getDaysBetweenTodayAnd(selectedDateValue);
+    const selectedDateForBackend = this.formatDateForBackend(selectedDate);
+
+    if (this.closedDaySet.has(selectedDateForBackend)) {
+      this.bookingError = 'This site is closed on the selected date.';
+      return false;
+    }
+
+    const daysBeforeMatch = this.getDaysBetweenTodayAnd(selectedDate);
 
     if (daysBeforeMatch < 0) {
       this.bookingError = 'You cannot book a court in the past.';
@@ -301,15 +363,75 @@ export class ReservationCreation implements OnInit {
     return false;
   }
 
-  private getDaysBetweenTodayAnd(dateValue: string): number {
-    const today = new Date();
+  private updateDateLimits(): void {
+    const currentUser = this.userService.getCurrentUserOrNull();
+    const today = this.getStartOfToday();
+
+    let bookingLimitDays = this.bookingRule?.freeBookingLimitDays ?? 5;
+
+    if (currentUser?.type === 'GLOBAL') {
+      bookingLimitDays = this.bookingRule?.globalBookingLimitDays ?? 21;
+    }
+
+    if (currentUser?.type === 'SITE') {
+      bookingLimitDays = this.bookingRule?.siteBookingLimitDays ?? 14;
+    }
+
+    if (currentUser?.type === 'FREE') {
+      bookingLimitDays = this.bookingRule?.freeBookingLimitDays ?? 5;
+    }
+
+    this.minDate = today;
+    this.maxDate = this.addDays(today, bookingLimitDays);
+
+    this.form.controls.date.updateValueAndValidity();
+  }
+
+  private getDaysBetweenTodayAnd(dateValue: Date): number {
+    const today = this.getStartOfToday();
     const selectedDate = new Date(dateValue);
 
-    today.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);
 
     const diffInMs = selectedDate.getTime() - today.getTime();
 
     return Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+  }
+
+  private getStartOfToday(): Date {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    result.setHours(0, 0, 0, 0);
+    return result;
+  }
+
+  private formatDateForBackend(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  formatDateForDisplay(dateValue: string | Date | null | undefined): string {
+    if (!dateValue) {
+      return 'Choose a date';
+    }
+
+    const date = typeof dateValue === 'string'
+      ? new Date(`${dateValue}T00:00:00`)
+      : dateValue;
+
+    return date.toLocaleDateString('fr-BE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }
 }

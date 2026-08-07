@@ -1,18 +1,35 @@
-<div class="creation-page">
+<div class="booking-page">
 
-  <div class="creation-header">
-    <h1>Book a Court</h1>
-    <p>Create your match by choosing a site, a court and an available time slot.</p>
-  </div>
+  <section class="booking-hero">
+    <span class="booking-eyebrow">Padel booking</span>
+    <h1>Reserve your court</h1>
+    <p>
+      Choose a site, select a court and confirm your match. Availability and booking rules are checked by the backend.
+    </p>
+  </section>
 
-  <mat-card class="creation-card">
-    <mat-card-content>
+  <form [formGroup]="form" (ngSubmit)="addReservation()" class="booking-shell">
 
-      <form [formGroup]="form" (ngSubmit)="addReservation()" class="reservation-form">
+    <mat-card class="booking-card form-card">
+      <mat-card-content>
+
+        <div class="card-header">
+          <div>
+            <span class="step-label">Step 1</span>
+            <h2>Match details</h2>
+            <p>Fill in the information needed to create your reservation.</p>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <span>01</span>
+          <div>
+            <h3>Location</h3>
+            <p>Select the club and the court.</p>
+          </div>
+        </div>
 
         <div class="form-grid">
-
-          <!-- SITE -->
           <mat-form-field appearance="outline">
             <mat-label>Site</mat-label>
 
@@ -29,7 +46,6 @@
             }
           </mat-form-field>
 
-          <!-- COURT -->
           <mat-form-field appearance="outline">
             <mat-label>Court</mat-label>
 
@@ -45,18 +61,51 @@
               <mat-error>Court is required</mat-error>
             }
           </mat-form-field>
+        </div>
 
-          <!-- DATE -->
+        <div class="section-title">
+          <span>02</span>
+          <div>
+            <h3>Schedule</h3>
+            <p>Pick the date and time slot for your match.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
           <mat-form-field appearance="outline">
             <mat-label>Date</mat-label>
-            <input matInput type="date" formControlName="date">
+
+            <input
+              matInput
+              readonly
+              formControlName="date"
+              [matDatepicker]="reservationPicker"
+              [min]="minDate"
+              [max]="maxDate"
+              [matDatepickerFilter]="availableDateFilter"
+              (click)="reservationPicker.open()"
+            >
+
+            <mat-datepicker-toggle matIconSuffix [for]="reservationPicker"></mat-datepicker-toggle>
+            <mat-datepicker #reservationPicker></mat-datepicker>
 
             @if (form.get('date')?.hasError('required') && form.get('date')?.touched) {
               <mat-error>Date is required</mat-error>
             }
+
+            @if (form.get('date')?.hasError('matDatepickerFilter')) {
+              <mat-error>This site is closed on this date</mat-error>
+            }
+
+            @if (form.get('date')?.hasError('matDatepickerMin')) {
+              <mat-error>You cannot book in the past</mat-error>
+            }
+
+            @if (form.get('date')?.hasError('matDatepickerMax')) {
+              <mat-error>This date is too far for your membership</mat-error>
+            }
           </mat-form-field>
 
-          <!-- TIME SLOT -->
           <mat-form-field appearance="outline">
             <mat-label>Time Slot</mat-label>
 
@@ -72,62 +121,162 @@
               <mat-error>Time slot is required</mat-error>
             }
           </mat-form-field>
+        </div>
 
-          <!-- TYPE -->
+        @if (closedDays.length > 0) {
+          <div class="closed-days-box">
+            <div>
+              <strong>Closed days for this site</strong>
+              <p>These dates are disabled in the calendar.</p>
+            </div>
+
+            <div class="closed-days-list">
+              @for (closedDay of closedDays; track closedDay) {
+                <span>{{ formatDateForDisplay(closedDay) }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="section-title">
+          <span>03</span>
+          <div>
+            <h3>Match type</h3>
+            <p>Choose if other players can join your match.</p>
+          </div>
+        </div>
+
+        <div class="form-grid single">
           <mat-form-field appearance="outline">
             <mat-label>Match Type</mat-label>
 
             <mat-select formControlName="type">
-              <mat-option value="PUBLIC">Public</mat-option>
-              <mat-option value="PRIVATE">Private</mat-option>
+              <mat-option value="PUBLIC">Public match</mat-option>
+              <mat-option value="PRIVATE">Private match</mat-option>
             </mat-select>
           </mat-form-field>
-
-          <!-- PRICE -->
-          <mat-form-field appearance="outline">
-            <mat-label>Price (€)</mat-label>
-            <input matInput type="number" formControlName="price" readonly>
-            <mat-hint>Total match price from booking rules</mat-hint>
-          </mat-form-field>
-
-        </div>
-
-        <div class="form-summary">
-          <span>Total price</span>
-          <strong>{{ form.get('price')?.value }} €</strong>
         </div>
 
         @if (bookingSuccess) {
-          <div class="booking-success">
+          <div class="feedback success">
             {{ bookingSuccess }}
           </div>
         }
 
         @if (bookingError) {
-          <div class="booking-error">
+          <div class="feedback error">
             {{ bookingError }}
           </div>
         }
 
-        <div class="form-actions">
-          <button
-            mat-raised-button
-            color="primary"
-            type="submit"
-            class="submit-btn"
-            [disabled]="isSubmitting"
-          >
-            @if (isSubmitting) {
-              Creating...
-            } @else {
-              Create Reservation
-            }
-          </button>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="booking-card summary-card">
+      <mat-card-content>
+
+        <div class="summary-status">
+          <span></span>
+          Live summary
         </div>
 
-      </form>
+        <h2>Reservation summary</h2>
+        <p class="summary-intro">
+          Check the details before confirming your booking.
+        </p>
 
-    </mat-card-content>
-  </mat-card>
+        <div class="summary-list">
+
+          <div class="summary-row">
+            <small>Site</small>
+            <strong>
+              @if (!form.get('siteId')?.value) {
+                Choose a site
+              }
+
+              @for (site of sites; track site.id) {
+                @if (form.get('siteId')?.value === site.id) {
+                  {{ site.name }}
+                }
+              }
+            </strong>
+          </div>
+
+          <div class="summary-row">
+            <small>Court</small>
+            <strong>
+              @if (!form.get('courtId')?.value) {
+                Choose a court
+              }
+
+              @for (court of courts; track court.id) {
+                @if (form.get('courtId')?.value === court.id) {
+                  {{ court.name }}
+                }
+              }
+            </strong>
+          </div>
+
+          <div class="summary-row">
+            <small>Date</small>
+            <strong>
+              {{ formatDateForDisplay(form.get('date')?.value) }}
+            </strong>
+          </div>
+
+          <div class="summary-row">
+            <small>Time</small>
+            <strong>
+              @if (!form.get('time')?.value) {
+                Choose a time
+              }
+
+              @for (timeSlot of timeSlots; track timeSlot.id) {
+                @if (form.get('time')?.value === timeSlot.startTime) {
+                  {{ timeSlot.label }}
+                }
+              }
+            </strong>
+          </div>
+
+          <div class="summary-row">
+            <small>Type</small>
+            <strong>
+              {{ form.get('type')?.value === 'PRIVATE' ? 'Private match' : 'Public match' }}
+            </strong>
+          </div>
+
+        </div>
+
+        <div class="price-box">
+          <div>
+            <small>Total price</small>
+            <span>From booking rules</span>
+          </div>
+          <strong>{{ form.get('price')?.value }} €</strong>
+        </div>
+
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="reserve-btn"
+          [disabled]="isSubmitting || form.invalid"
+        >
+          @if (isSubmitting) {
+            Creating...
+          } @else {
+            Reserve this court
+          }
+        </button>
+
+        <p class="summary-note">
+          The backend validates court availability, time slot, booking limits and price.
+        </p>
+
+      </mat-card-content>
+    </mat-card>
+
+  </form>
 
 </div>
