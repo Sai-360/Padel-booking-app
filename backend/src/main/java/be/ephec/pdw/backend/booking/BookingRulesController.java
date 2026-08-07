@@ -5,8 +5,10 @@ import be.ephec.pdw.backend.site.Site;
 import be.ephec.pdw.backend.site.SiteRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/booking-rules")
@@ -14,15 +16,18 @@ public class BookingRulesController {
 
     private final BookingRuleRepository bookingRuleRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final ClosedDayRepository closedDayRepository;
     private final SiteRepository siteRepository;
 
     public BookingRulesController(
             BookingRuleRepository bookingRuleRepository,
             TimeSlotRepository timeSlotRepository,
+            ClosedDayRepository closedDayRepository,
             SiteRepository siteRepository
     ) {
         this.bookingRuleRepository = bookingRuleRepository;
         this.timeSlotRepository = timeSlotRepository;
+        this.closedDayRepository = closedDayRepository;
         this.siteRepository = siteRepository;
     }
 
@@ -58,6 +63,27 @@ public class BookingRulesController {
                         slot.getEndTime(),
                         slot.getStartTime() + " - " + slot.getEndTime()
                 ))
+                .toList();
+    }
+
+    @GetMapping("/closed-days")
+    public List<LocalDate> getClosedDaysForSite(@RequestParam UUID siteId) {
+        siteRepository.findById(siteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Site not found."));
+
+        List<LocalDate> globalClosedDays = closedDayRepository.findByActiveTrueAndSiteIdIsNull()
+                .stream()
+                .map(ClosedDay::getClosedDate)
+                .toList();
+
+        List<LocalDate> siteClosedDays = closedDayRepository.findByActiveTrueAndSiteId(siteId)
+                .stream()
+                .map(ClosedDay::getClosedDate)
+                .toList();
+
+        return Stream.concat(globalClosedDays.stream(), siteClosedDays.stream())
+                .distinct()
+                .sorted()
                 .toList();
     }
 }
