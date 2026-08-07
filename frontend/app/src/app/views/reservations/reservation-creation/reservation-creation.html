@@ -15,14 +15,13 @@
           <!-- SITE -->
           <mat-form-field appearance="outline">
             <mat-label>Site</mat-label>
-            <mat-select formControlName="siteId">
-              <mat-option value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa">
-                Padel Brussels
-              </mat-option>
 
-              <mat-option value="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb">
-                Padel Namur
-              </mat-option>
+            <mat-select formControlName="siteId">
+              @for (site of sites; track site.id) {
+                <mat-option [value]="site.id">
+                  {{ site.name }}
+                </mat-option>
+              }
             </mat-select>
 
             @if (form.get('siteId')?.hasError('required') && form.get('siteId')?.touched) {
@@ -33,14 +32,13 @@
           <!-- COURT -->
           <mat-form-field appearance="outline">
             <mat-label>Court</mat-label>
-            <mat-select formControlName="courtId">
-              <mat-option value="cccccccc-cccc-cccc-cccc-cccccccccccc">
-                Court 1
-              </mat-option>
 
-              <mat-option value="dddddddd-dddd-dddd-dddd-dddddddddddd">
-                Court 2
-              </mat-option>
+            <mat-select formControlName="courtId">
+              @for (court of courts; track court.id) {
+                <mat-option [value]="court.id">
+                  {{ court.name }}
+                </mat-option>
+              }
             </mat-select>
 
             @if (form.get('courtId')?.hasError('required') && form.get('courtId')?.touched) {
@@ -61,13 +59,13 @@
           <!-- TIME SLOT -->
           <mat-form-field appearance="outline">
             <mat-label>Time Slot</mat-label>
+
             <mat-select formControlName="time">
-              <mat-option value="09:00">09:00 - 10:30</mat-option>
-              <mat-option value="10:45">10:45 - 12:15</mat-option>
-              <mat-option value="12:30">12:30 - 14:00</mat-option>
-              <mat-option value="14:15">14:15 - 15:45</mat-option>
-              <mat-option value="16:00">16:00 - 17:30</mat-option>
-              <mat-option value="17:45">17:45 - 19:15</mat-option>
+              @for (timeSlot of timeSlots; track timeSlot.id) {
+                <mat-option [value]="timeSlot.startTime">
+                  {{ timeSlot.label }}
+                </mat-option>
+              }
             </mat-select>
 
             @if (form.get('time')?.hasError('required') && form.get('time')?.touched) {
@@ -78,6 +76,7 @@
           <!-- TYPE -->
           <mat-form-field appearance="outline">
             <mat-label>Match Type</mat-label>
+
             <mat-select formControlName="type">
               <mat-option value="PUBLIC">Public</mat-option>
               <mat-option value="PRIVATE">Private</mat-option>
@@ -88,7 +87,7 @@
           <mat-form-field appearance="outline">
             <mat-label>Price (€)</mat-label>
             <input matInput type="number" formControlName="price" readonly>
-            <mat-hint>Fixed total match price</mat-hint>
+            <mat-hint>Total match price from booking rules</mat-hint>
           </mat-form-field>
 
         </div>
@@ -110,7 +109,6 @@
           </div>
         }
 
-        <!-- BUTTON -->
         <div class="form-actions">
           <button
             mat-raised-button
