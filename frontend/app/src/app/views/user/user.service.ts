@@ -6,22 +6,29 @@ import { Member } from '../../model/Member';
 })
 export class UserService {
 
-  private readonly defaultUser: Member = {
-    id: '33333333-3333-3333-3333-333333333333',
-    matricule: 'L0001',
-    name: 'Free Member',
-    type: 'FREE',
-    unpaidBalance: 0
-  };
-
   private currentUser: Member | null = null;
 
-  setCurrentUser(member: Member): void {
+  setCurrentUser(member: Member, clearAdminSession: boolean = true): void {
     this.currentUser = member;
     localStorage.setItem('currentUser', JSON.stringify(member));
+
+    if (clearAdminSession) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+    }
   }
 
   getCurrentUser(): Member {
+    const currentUser = this.getCurrentUserOrNull();
+
+    if (!currentUser) {
+      throw new Error('No current user selected.');
+    }
+
+    return currentUser;
+  }
+
+  getCurrentUserOrNull(): Member | null {
     if (this.currentUser) {
       return this.currentUser;
     }
@@ -29,14 +36,11 @@ export class UserService {
     const storedUser = localStorage.getItem('currentUser');
 
     if (storedUser) {
-      this.currentUser = JSON.parse(storedUser);
-      return this.currentUser!;
+      this.currentUser = JSON.parse(storedUser) as Member;
+      return this.currentUser;
     }
 
-    this.currentUser = this.defaultUser;
-    localStorage.setItem('currentUser', JSON.stringify(this.defaultUser));
-
-    return this.defaultUser;
+    return null;
   }
 
   getCurrentUserId(): string {
@@ -44,11 +48,14 @@ export class UserService {
   }
 
   isLoggedIn(): boolean {
-    return true;
+    return this.getCurrentUserOrNull() !== null;
   }
 
   logout(): void {
     this.currentUser = null;
+
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
   }
 }

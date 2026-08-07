@@ -1,18 +1,23 @@
 import { Routes } from '@angular/router';
-import {Home} from './views/home/home';
-import {ReservationList} from './views/reservations/reservation-list/reservation-list';
-import {ReservationCreation} from './views/reservations/reservation-creation/reservation-creation';
-import {PublicMatches} from './views/public-matches/public-matches';
-import {MyReservations} from './views/my-reservations/my-reservations';
-import {MyProfile} from './views/my-profile/my-profile';
+
+import { Home } from './views/home/home';
+import { ReservationList } from './views/reservations/reservation-list/reservation-list';
+import { ReservationCreation } from './views/reservations/reservation-creation/reservation-creation';
+import { PublicMatches } from './views/public-matches/public-matches';
+import { MyReservations } from './views/my-reservations/my-reservations';
+import { MyProfile } from './views/my-profile/my-profile';
+import { adminAuthGuard } from './shared/guards/admin-auth.guard';
+
 export const routes: Routes = [
-
-
-{path: 'home', component: Home},
+  { path: 'home', component: Home },
   { path: 'book', component: ReservationCreation },
   { path: 'public-matches', component: PublicMatches },
   { path: 'my-reservations', component: MyReservations },
   { path: 'profile', component: MyProfile },
+
   {path: 'login', loadComponent: () => import('./views/login/login').then(m => m.Login)},
-  {path: 'admin', loadComponent: () => import('./views/admin/admin').then(m => m.Admin)}
+
+  {path: 'admin', canActivate: [adminAuthGuard], loadComponent: () => import('./views/admin/admin').then(m => m.Admin)},
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: '**', redirectTo: 'home' }
 ];

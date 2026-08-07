@@ -61,7 +61,17 @@ export class Login {
   private loginAsAdmin(matricule: string, password: string): void {
     this.adminAuthService.login(matricule, password).subscribe({
       next: () => {
-        this.router.navigate(['/admin']);
+        this.memberApiService.getMemberByMatricule(matricule).subscribe({
+          next: member => {
+            // Admin connecté + membre courant conservé pour pouvoir réserver aussi.
+            this.userService.setCurrentUser(member, false);
+            this.router.navigate(['/admin']);
+          },
+          error: error => {
+            this.loginError = 'Admin logged in, but member profile could not be loaded.';
+            console.error(error);
+          }
+        });
       },
       error: error => {
         this.loginError = error.error?.message || 'Invalid admin credentials.';

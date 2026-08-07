@@ -23,6 +23,7 @@ import { MemberApiService } from '../../user/member-api.service';
 })
 export class Header implements OnInit {
   layoutService = inject(LayoutService);
+
   private memberApiService = inject(MemberApiService);
   private userService = inject(UserService);
   private adminAuthService = inject(AdminAuthService);
@@ -39,11 +40,11 @@ export class Header implements OnInit {
       return;
     }
 
-    if (!this.userService.isLoggedIn()) {
+    const currentUser = this.userService.getCurrentUserOrNull();
+
+    if (!currentUser) {
       return;
     }
-
-    const currentUser = this.userService.getCurrentUser();
 
     this.memberApiService.getMemberByMatricule(currentUser.matricule).subscribe({
       next: updatedMember => {
@@ -71,7 +72,11 @@ export class Header implements OnInit {
       return `Connected as ${parsedAdmin.name}`;
     }
 
-    const currentUser = this.userService.getCurrentUser();
+    const currentUser = this.userService.getCurrentUserOrNull();
+
+    if (!currentUser) {
+      return '';
+    }
 
     if (currentUser.unpaidBalance && currentUser.unpaidBalance > 0) {
       return `Connected as ${currentUser.name} - unpaid balance: ${currentUser.unpaidBalance}€`;
@@ -85,12 +90,17 @@ export class Header implements OnInit {
       return false;
     }
 
-    const currentUser = this.userService.getCurrentUser();
-    return !!currentUser.unpaidBalance && currentUser.unpaidBalance > 0;
+    const currentUser = this.userService.getCurrentUserOrNull();
+
+    return !!currentUser?.unpaidBalance && currentUser.unpaidBalance > 0;
   }
 
   payBalance(): void {
-    const currentUser = this.userService.getCurrentUser();
+    const currentUser = this.userService.getCurrentUserOrNull();
+
+    if (!currentUser) {
+      return;
+    }
 
     this.memberApiService.payBalance(currentUser.id).subscribe({
       next: updatedMember => {
@@ -103,10 +113,7 @@ export class Header implements OnInit {
   }
 
   canShowLoginButton(): boolean {
-    const currentUser = this.userService.getCurrentUser();
-
-    return !this.adminAuthService.isAdminLoggedIn()
-      && currentUser.matricule === 'L0001';
+    return !this.adminAuthService.isAdminLoggedIn();
   }
 
   logout(): void {
