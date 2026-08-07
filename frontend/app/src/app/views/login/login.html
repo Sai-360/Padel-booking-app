@@ -1,39 +1,145 @@
 <div class="login-page">
 
-  <mat-card class="login-card">
-    <mat-card-content>
+  <section class="login-hero">
 
-      <h1>Login</h1>
-      <p>Enter your matricule to continue.</p>
+    <div class="hero-card">
+      <span class="login-eyebrow">Welcome back</span>
 
-      <form [formGroup]="form" (ngSubmit)="login()">
+      <h1>Access your padel booking space.</h1>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Matricule</mat-label>
-          <input matInput formControlName="matricule" placeholder="e.g. L0001">
-          @if (form.get('matricule')?.hasError('required') && form.get('matricule')?.touched) {
-            <mat-error>Matricule is required</mat-error>
-          }
-        </mat-form-field>
+      <p>
+        Login as a member to book and join matches, or use admin access to manage reservations and members.
+      </p>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Admin password</mat-label>
-          <input matInput type="password" formControlName="password" placeholder="Only for admins">
-        </mat-form-field>
+      <div class="hero-features">
+        <div>
+          <mat-icon>event_available</mat-icon>
+          <span>Book courts</span>
+        </div>
 
-        @if (loginError) {
-          <div class="login-error">
-            {{ loginError }}
+        <div>
+          <mat-icon>groups</mat-icon>
+          <span>Join public matches</span>
+        </div>
+
+        <div>
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span>Secure admin dashboard</span>
+        </div>
+      </div>
+    </div>
+
+    <mat-card class="login-card">
+      <mat-card-content>
+
+        <div class="login-card-header">
+          <div>
+            <span class="form-kicker">{{ loginMode === 'ADMIN' ? 'Secured area' : 'Member area' }}</span>
+            <h2>{{ getModeTitle() }}</h2>
+            <p>{{ getModeDescription() }}</p>
           </div>
-        }
+        </div>
 
-        <button mat-raised-button color="primary" type="submit">
-          Login
-        </button>
+        <div class="mode-switch">
+          <button
+            type="button"
+            [class.active]="loginMode === 'MEMBER'"
+            (click)="selectLoginMode('MEMBER')"
+          >
+            <mat-icon>person</mat-icon>
+            Member
+          </button>
 
-      </form>
+          <button
+            type="button"
+            [class.active]="loginMode === 'ADMIN'"
+            (click)="selectLoginMode('ADMIN')"
+          >
+            <mat-icon>shield</mat-icon>
+            Admin
+          </button>
+        </div>
 
-    </mat-card-content>
-  </mat-card>
+        <form [formGroup]="form" (ngSubmit)="login()">
+
+          <mat-form-field appearance="outline">
+            <mat-label>Matricule</mat-label>
+
+            <input
+              matInput
+              formControlName="matricule"
+              autocomplete="username"
+              placeholder="e.g. G0002"
+            >
+
+            @if (form.get('matricule')?.hasError('required') && form.get('matricule')?.touched) {
+              <mat-error>Matricule is required</mat-error>
+            }
+          </mat-form-field>
+
+          @if (loginMode === 'ADMIN') {
+            <mat-form-field appearance="outline">
+              <mat-label>Admin password</mat-label>
+
+              <input
+                matInput
+                type="password"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="Enter admin password"
+              >
+            </mat-form-field>
+          }
+
+          @if (loginError) {
+            <div class="login-error">
+              <mat-icon>error</mat-icon>
+              <span>{{ loginError }}</span>
+            </div>
+          }
+
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            class="login-submit"
+            [disabled]="isSubmitting"
+          >
+            @if (isSubmitting) {
+              Signing in...
+            } @else if (loginMode === 'ADMIN') {
+              Login as admin
+            } @else {
+              Continue as member
+            }
+          </button>
+
+        </form>
+
+        <div class="demo-box">
+          <div>
+            <strong>Demo accounts</strong>
+            <span>Useful for the project presentation.</span>
+          </div>
+
+          <div class="demo-actions">
+            <button type="button" (click)="fillMemberDemo()">
+              G0002
+            </button>
+
+            <button type="button" (click)="fillAdminDemo()">
+              G0001 admin
+            </button>
+
+            <button type="button" (click)="fillSiteAdminDemo()">
+              S0001 site admin
+            </button>
+          </div>
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+
+  </section>
 
 </div>
