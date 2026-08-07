@@ -2,9 +2,10 @@ package be.ephec.pdw.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -50,19 +51,36 @@ public class SecurityConfig {
                 );
 
         http.authorizeHttpRequests(auth -> auth
+
+
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+
+                .requestMatchers("/auth/admin/login").permitAll()
+
+
                 .requestMatchers(
-                        "/auth/admin/login",
-                        "/members/**",
-                        "/reservations/**",
-                        "/sites/**",
-                        "/courts/**",
                         "/h2-console/**",
                         "/swagger-ui.html",
                         "/swagger-ui/**",
                         "/v3/api-docs/**"
                 ).permitAll()
-                .requestMatchers("/admin/**").authenticated()
-                .anyRequest().permitAll()
+
+                // Public data needed by the normal booking app
+                .requestMatchers(HttpMethod.GET, "/sites/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/courts/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/booking-rules/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/members/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/reservations/**").permitAll()
+
+
+                .requestMatchers(HttpMethod.POST, "/reservations/**").permitAll()
+
+                // Real protected admin backend routes
+                .requestMatchers("/admin/**").hasAnyRole("GLOBAL_ADMIN", "SITE_ADMIN")
+
+
+                .anyRequest().denyAll()
         );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
