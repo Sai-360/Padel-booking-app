@@ -1,9 +1,18 @@
 package be.ephec.pdw.backend.reservation;
 
+import be.ephec.pdw.backend.booking.BookingRule;
+import be.ephec.pdw.backend.booking.BookingRuleRepository;
+import be.ephec.pdw.backend.booking.ClosedDayRepository;
+import be.ephec.pdw.backend.booking.TimeSlot;
+import be.ephec.pdw.backend.booking.TimeSlotRepository;
+import be.ephec.pdw.backend.court.Court;
+import be.ephec.pdw.backend.court.CourtRepository;
 import be.ephec.pdw.backend.exception.BusinessException;
 import be.ephec.pdw.backend.exception.ResourceNotFoundException;
 import be.ephec.pdw.backend.member.Member;
 import be.ephec.pdw.backend.member.MemberRepository;
+import be.ephec.pdw.backend.site.Site;
+import be.ephec.pdw.backend.site.SiteRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,19 +35,34 @@ public class ReservationService {
     private final ParticipationRepository participationRepository;
     private final ParticipationMapper participationMapper;
     private final MemberRepository memberRepository;
+    private final SiteRepository siteRepository;
+    private final CourtRepository courtRepository;
+    private final BookingRuleRepository bookingRuleRepository;
+    private final TimeSlotRepository timeSlotRepository;
+    private final ClosedDayRepository closedDayRepository;
 
     public ReservationService(
             ReservationRepository reservationRepository,
             ReservationMapper reservationMapper,
             ParticipationRepository participationRepository,
             ParticipationMapper participationMapper,
-            MemberRepository memberRepository
+            MemberRepository memberRepository,
+            SiteRepository siteRepository,
+            CourtRepository courtRepository,
+            BookingRuleRepository bookingRuleRepository,
+            TimeSlotRepository timeSlotRepository,
+            ClosedDayRepository closedDayRepository
     ) {
         this.reservationRepository = reservationRepository;
         this.reservationMapper = reservationMapper;
         this.participationRepository = participationRepository;
         this.participationMapper = participationMapper;
         this.memberRepository = memberRepository;
+        this.siteRepository = siteRepository;
+        this.courtRepository = courtRepository;
+        this.bookingRuleRepository = bookingRuleRepository;
+        this.timeSlotRepository = timeSlotRepository;
+        this.closedDayRepository = closedDayRepository;
     }
 
     public List<ReservationDTO> getAllReservations(UUID currentUserId) {
@@ -85,7 +109,12 @@ public class ReservationService {
                 .toList();
     }
 
+    @Transactional
     public ReservationDTO createReservation(ReservationDTO reservationDTO) {
+        BookingRule bookingRule = getBookingRule();
+
+        validateBasicReservationInput(reservationDTO);
+
         Member organizer = memberRepository.findById(reservationDTO.organizerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
 
@@ -102,23 +131,43 @@ public class ReservationService {
             );
         }
 
-        validateReservationCreationRules(reservationDTO, organizer);
+        validateSiteAndCourt(reservationDTO);
+        validateReservationCreationRules(reservationDTO, organizer, bookingRule);
+        validateStartTime(reservationDTO);
+        validateCourtAvailability(reservationDTO);
 
         Reservation reservation = reservationMapper.toEntity(reservationDTO);
+
+        reservation.setId(UUID.randomUUID());
+        reservation.setStatus(ReservationStatus.ACTIVE);
+        reservation.setPrice(bookingRule.getMatchPrice());
+
         Reservation savedReservation = reservationRepository.save(reservation);
+
+        createOrganizerParticipationIfMissing(savedReservation, organizer);
 
         return toDTOWithUserState(savedReservation, organizer.getId());
     }
 
     public ParticipationDTO joinReservation(UUID reservationId, UUID memberId) {
+        BookingRule bookingRule = getBookingRule();
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
+
+        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
+            throw new BusinessException("Only active reservations can be joined.");
+        }
 
         if (reservation.getType() != ReservationType.PUBLIC) {
             throw new BusinessException("Only public reservations can be joined.");
         }
 
-        if (participationRepository.countByReservationId(reservationId) >= 4) {
+        if (reservation.getReservationDate().isBefore(LocalDate.now())) {
+            throw new BusinessException("You cannot join a reservation in the past.");
+        }
+
+        if (participationRepository.countByReservationId(reservationId) >= bookingRule.getMaxPlayers()) {
             throw new BusinessException("Reservation is full.");
         }
 
@@ -128,6 +177,12 @@ public class ReservationService {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found."));
+
+        if (member.getBlockedUntil() != null && member.getBlockedUntil().isAfter(LocalDate.now())) {
+            throw new BusinessException(
+                    "Member is blocked from joining reservations until " + member.getBlockedUntil() + "."
+            );
+        }
 
         Participation participation = Participation.builder()
                 .id(UUID.randomUUID())
@@ -149,10 +204,16 @@ public class ReservationService {
             UUID organizerId,
             List<String> playerMatricules
     ) {
+        BookingRule bookingRule = getBookingRule();
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
 
-        if (!ReservationType.PRIVATE.name().equals(reservation.getType().name())) {
+        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
+            throw new BusinessException("Only active reservations can be modified.");
+        }
+
+        if (reservation.getType() != ReservationType.PRIVATE) {
             throw new BusinessException(
                     "Players can only be added manually to private reservations. Current type is: " + reservation.getType()
             );
@@ -164,10 +225,6 @@ public class ReservationService {
 
         if (playerMatricules == null || playerMatricules.isEmpty()) {
             throw new BusinessException("At least one player matricule is required.");
-        }
-
-        if (playerMatricules.size() > 3) {
-            throw new BusinessException("You can add a maximum of 3 invited players.");
         }
 
         Set<String> uniqueMatricules = new HashSet<>(playerMatricules);
@@ -183,33 +240,27 @@ public class ReservationService {
             throw new BusinessException("Organizer cannot be added as invited player.");
         }
 
-        if (!participationRepository.existsByReservationIdAndMemberId(reservationId, organizer.getId())) {
-            Participation organizerParticipation = Participation.builder()
-                    .id(UUID.randomUUID())
-                    .reservationId(reservationId)
-                    .memberId(organizer.getId())
-                    .memberName(organizer.getName())
-                    .role(ParticipationRole.ORGANIZER)
-                    .paid(false)
-                    .status(ParticipationStatus.PENDING)
-                    .build();
-
-            participationRepository.save(organizerParticipation);
-        }
+        createOrganizerParticipationIfMissing(reservation, organizer);
 
         long currentParticipantsCount = participationRepository.countByReservationId(reservationId);
 
-        if (currentParticipantsCount >= 4) {
-            throw new BusinessException("Private reservation already has 4 players.");
+        if (currentParticipantsCount >= bookingRule.getMaxPlayers()) {
+            throw new BusinessException("Private reservation already has the maximum number of players.");
         }
 
-        if (currentParticipantsCount + playerMatricules.size() > 4) {
-            throw new BusinessException("Too many players for this private reservation.");
+        if (currentParticipantsCount + playerMatricules.size() > bookingRule.getMaxPlayers()) {
+            throw new BusinessException(
+                    "Too many players for this private reservation. Maximum players: " + bookingRule.getMaxPlayers()
+            );
         }
 
         for (String matricule : playerMatricules) {
             Member player = memberRepository.findByMatricule(matricule)
                     .orElseThrow(() -> new ResourceNotFoundException("Member not found: " + matricule));
+
+            if (player.getBlockedUntil() != null && player.getBlockedUntil().isAfter(LocalDate.now())) {
+                throw new BusinessException("Member is blocked and cannot be added: " + matricule);
+            }
 
             if (participationRepository.existsByReservationIdAndMemberId(reservationId, player.getId())) {
                 throw new BusinessException("Member already added to this reservation: " + matricule);
@@ -235,6 +286,8 @@ public class ReservationService {
     }
 
     public ReservationDTO applyPenaltyForIncompletePrivateReservation(UUID reservationId) {
+        BookingRule bookingRule = getBookingRule();
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
 
@@ -244,7 +297,7 @@ public class ReservationService {
 
         long participantsCount = participationRepository.countByReservationId(reservationId);
 
-        if (participantsCount >= 4) {
+        if (participantsCount >= bookingRule.getMaxPlayers()) {
             throw new BusinessException("Private reservation is complete.");
         }
 
@@ -252,7 +305,7 @@ public class ReservationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
 
         reservation.setType(ReservationType.PUBLIC);
-        organizer.setBlockedUntil(LocalDate.now().plusWeeks(1));
+        organizer.setBlockedUntil(LocalDate.now().plusDays(bookingRule.getPrivatePenaltyBlockDays()));
 
         memberRepository.save(organizer);
 
@@ -262,6 +315,13 @@ public class ReservationService {
     }
 
     public ParticipationDTO payReservation(UUID reservationId, UUID memberId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found."));
+
+        if (reservation.getStatus() != ReservationStatus.ACTIVE) {
+            throw new BusinessException("Only active reservations can be paid.");
+        }
+
         Participation participation = participationRepository
                 .findByReservationIdAndMemberId(reservationId, memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Participation not found."));
@@ -277,15 +337,17 @@ public class ReservationService {
     @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void automaticallyApplyPenaltiesForTomorrowPrivateReservations() {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        BookingRule bookingRule = getBookingRule();
 
-        List<Reservation> privateReservationsTomorrow =
-                reservationRepository.findByTypeAndReservationDate(ReservationType.PRIVATE, tomorrow);
+        LocalDate targetDate = LocalDate.now().plusDays(bookingRule.getPenaltyCheckDaysBeforeMatch());
 
-        for (Reservation reservation : privateReservationsTomorrow) {
+        List<Reservation> privateReservations =
+                reservationRepository.findByTypeAndReservationDate(ReservationType.PRIVATE, targetDate);
+
+        for (Reservation reservation : privateReservations) {
             long participantsCount = participationRepository.countByReservationId(reservation.getId());
 
-            if (participantsCount < 4) {
+            if (participantsCount < bookingRule.getMaxPlayers()) {
                 applyPenaltyForIncompletePrivateReservation(reservation.getId());
             }
         }
@@ -294,12 +356,14 @@ public class ReservationService {
     @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void automaticallyApplyUnpaidBalanceForTomorrowPublicReservations() {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        BookingRule bookingRule = getBookingRule();
 
-        List<Reservation> publicReservationsTomorrow =
-                reservationRepository.findByTypeAndReservationDate(ReservationType.PUBLIC, tomorrow);
+        LocalDate targetDate = LocalDate.now().plusDays(bookingRule.getPenaltyCheckDaysBeforeMatch());
 
-        for (Reservation reservation : publicReservationsTomorrow) {
+        List<Reservation> publicReservations =
+                reservationRepository.findByTypeAndReservationDate(ReservationType.PUBLIC, targetDate);
+
+        for (Reservation reservation : publicReservations) {
             if (reservation.isBalanceApplied()) {
                 continue;
             }
@@ -309,14 +373,15 @@ public class ReservationService {
                     .filter(Participation::isPaid)
                     .count();
 
-            if (paidParticipantsCount >= 4) {
+            if (paidParticipantsCount >= bookingRule.getMaxPlayers()) {
                 reservation.setBalanceApplied(true);
                 reservationRepository.save(reservation);
                 continue;
             }
 
-            int missingPlayers = 4 - (int) paidParticipantsCount;
-            BigDecimal amountDue = BigDecimal.valueOf(missingPlayers).multiply(BigDecimal.valueOf(15));
+            int missingPlayers = bookingRule.getMaxPlayers() - (int) paidParticipantsCount;
+            BigDecimal amountDue = BigDecimal.valueOf(missingPlayers)
+                    .multiply(bookingRule.getPenaltyAmountPerMissingPlayer());
 
             Member organizer = memberRepository.findById(reservation.getOrganizerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Organizer not found."));
@@ -357,7 +422,34 @@ public class ReservationService {
         );
     }
 
-    private void validateReservationCreationRules(ReservationDTO reservationDTO, Member organizer) {
+    private BookingRule getBookingRule() {
+        return bookingRuleRepository.findFirstByOrderByIdAsc()
+                .orElseThrow(() -> new ResourceNotFoundException("Booking rules not found."));
+    }
+
+    private void validateBasicReservationInput(ReservationDTO reservationDTO) {
+        if (reservationDTO == null) {
+            throw new BusinessException("Reservation is required.");
+        }
+
+        if (reservationDTO.organizerId() == null) {
+            throw new BusinessException("Organizer is required.");
+        }
+
+        if (reservationDTO.reservationDate() == null) {
+            throw new BusinessException("Reservation date is required.");
+        }
+
+        if (reservationDTO.type() == null) {
+            throw new BusinessException("Reservation type is required.");
+        }
+    }
+
+    private void validateReservationCreationRules(
+            ReservationDTO reservationDTO,
+            Member organizer,
+            BookingRule bookingRule
+    ) {
         long daysBeforeMatch = getDaysBeforeMatch(reservationDTO.reservationDate());
 
         if (daysBeforeMatch < 0) {
@@ -367,36 +459,110 @@ public class ReservationService {
         validateClosedDays(reservationDTO);
 
         switch (organizer.getType()) {
-            case GLOBAL -> validateGlobalMemberBooking(daysBeforeMatch);
-            case SITE -> validateSiteMemberBooking(reservationDTO, organizer, daysBeforeMatch);
-            case FREE -> validateFreeMemberBooking(daysBeforeMatch);
+            case GLOBAL -> validateGlobalMemberBooking(daysBeforeMatch, bookingRule);
+            case SITE -> validateSiteMemberBooking(reservationDTO, organizer, daysBeforeMatch, bookingRule);
+            case FREE -> validateFreeMemberBooking(daysBeforeMatch, bookingRule);
         }
     }
 
-    private void validateClosedDays(ReservationDTO reservationDTO) {
-        List<LocalDate> globalClosedDays = List.of(
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2026, 12, 25)
+    private void validateSiteAndCourt(ReservationDTO reservationDTO) {
+        if (reservationDTO.siteId() == null) {
+            throw new BusinessException("Site is required.");
+        }
+
+        if (reservationDTO.courtId() == null) {
+            throw new BusinessException("Court is required.");
+        }
+
+        Site site = siteRepository.findById(reservationDTO.siteId())
+                .orElseThrow(() -> new ResourceNotFoundException("Site not found."));
+
+        Court court = courtRepository.findById(reservationDTO.courtId())
+                .orElseThrow(() -> new ResourceNotFoundException("Court not found."));
+
+        if (!court.isActive()) {
+            throw new BusinessException("This court is not active.");
+        }
+
+        if (!court.getSiteId().equals(site.getId())) {
+            throw new BusinessException("This court does not belong to the selected site.");
+        }
+    }
+
+    private void validateStartTime(ReservationDTO reservationDTO) {
+        if (reservationDTO.startTime() == null) {
+            throw new BusinessException("Start time is required.");
+        }
+
+        Site site = siteRepository.findById(reservationDTO.siteId())
+                .orElseThrow(() -> new ResourceNotFoundException("Site not found."));
+
+        TimeSlot timeSlot = timeSlotRepository.findByStartTimeAndActiveTrue(reservationDTO.startTime())
+                .orElseThrow(() -> new BusinessException("This time slot is not allowed."));
+
+        if (timeSlot.getStartTime().isBefore(site.getOpeningTime())) {
+            throw new BusinessException("Reservation cannot start before site opening time.");
+        }
+
+        if (timeSlot.getEndTime().isAfter(site.getClosingTime())) {
+            throw new BusinessException("Reservation cannot end after site closing time.");
+        }
+    }
+
+    private void validateCourtAvailability(ReservationDTO reservationDTO) {
+        boolean alreadyBooked = reservationRepository.existsByCourtIdAndReservationDateAndStartTimeAndStatus(
+                reservationDTO.courtId(),
+                reservationDTO.reservationDate(),
+                reservationDTO.startTime(),
+                ReservationStatus.ACTIVE
         );
 
-        if (globalClosedDays.contains(reservationDTO.reservationDate())) {
+        if (alreadyBooked) {
+            throw new BusinessException("This court is already booked at this date and time.");
+        }
+    }
+
+    private void createOrganizerParticipationIfMissing(
+            Reservation reservation,
+            Member organizer
+    ) {
+        boolean organizerAlreadyParticipant = participationRepository.existsByReservationIdAndMemberId(
+                reservation.getId(),
+                organizer.getId()
+        );
+
+        if (organizerAlreadyParticipant) {
+            return;
+        }
+
+        Participation organizerParticipation = Participation.builder()
+                .id(UUID.randomUUID())
+                .reservationId(reservation.getId())
+                .memberId(organizer.getId())
+                .memberName(organizer.getName())
+                .role(ParticipationRole.ORGANIZER)
+                .paid(false)
+                .status(ParticipationStatus.PENDING)
+                .build();
+
+        participationRepository.save(organizerParticipation);
+    }
+
+    private void validateClosedDays(ReservationDTO reservationDTO) {
+        boolean globalClosedDay = closedDayRepository.existsByActiveTrueAndSiteIdIsNullAndClosedDate(
+                reservationDTO.reservationDate()
+        );
+
+        if (globalClosedDay) {
             throw new BusinessException("Reservations are not allowed on a global closed day.");
         }
 
-        Map<UUID, List<LocalDate>> siteClosedDays = Map.of(
-                UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                List.of(LocalDate.of(2026, 6, 20)),
-
-                UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                List.of(LocalDate.of(2026, 6, 15))
-        );
-
-        List<LocalDate> closedDaysForSite = siteClosedDays.getOrDefault(
+        boolean siteClosedDay = closedDayRepository.existsByActiveTrueAndSiteIdAndClosedDate(
                 reservationDTO.siteId(),
-                List.of()
+                reservationDTO.reservationDate()
         );
 
-        if (closedDaysForSite.contains(reservationDTO.reservationDate())) {
+        if (siteClosedDay) {
             throw new BusinessException("Reservations are not allowed on a closed day for this site.");
         }
     }
@@ -405,19 +571,28 @@ public class ReservationService {
         return ChronoUnit.DAYS.between(LocalDate.now(), reservationDate);
     }
 
-    private void validateGlobalMemberBooking(long daysBeforeMatch) {
-        if (daysBeforeMatch > 21) {
-            throw new BusinessException("Global members can only book up to 3 weeks before the match.");
+    private void validateGlobalMemberBooking(long daysBeforeMatch, BookingRule bookingRule) {
+        if (daysBeforeMatch > bookingRule.getGlobalBookingLimitDays()) {
+            throw new BusinessException(
+                    "Global members can only book up to "
+                            + bookingRule.getGlobalBookingLimitDays()
+                            + " days before the match."
+            );
         }
     }
 
     private void validateSiteMemberBooking(
             ReservationDTO reservationDTO,
             Member organizer,
-            long daysBeforeMatch
+            long daysBeforeMatch,
+            BookingRule bookingRule
     ) {
-        if (daysBeforeMatch > 14) {
-            throw new BusinessException("Site members can only book up to 2 weeks before the match.");
+        if (daysBeforeMatch > bookingRule.getSiteBookingLimitDays()) {
+            throw new BusinessException(
+                    "Site members can only book up to "
+                            + bookingRule.getSiteBookingLimitDays()
+                            + " days before the match."
+            );
         }
 
         if (organizer.getSiteId() == null || !organizer.getSiteId().equals(reservationDTO.siteId().toString())) {
@@ -425,9 +600,13 @@ public class ReservationService {
         }
     }
 
-    private void validateFreeMemberBooking(long daysBeforeMatch) {
-        if (daysBeforeMatch > 5) {
-            throw new BusinessException("Free members can only book up to 5 days before the match.");
+    private void validateFreeMemberBooking(long daysBeforeMatch, BookingRule bookingRule) {
+        if (daysBeforeMatch > bookingRule.getFreeBookingLimitDays()) {
+            throw new BusinessException(
+                    "Free members can only book up to "
+                            + bookingRule.getFreeBookingLimitDays()
+                            + " days before the match."
+            );
         }
     }
 }
