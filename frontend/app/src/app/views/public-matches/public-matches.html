@@ -1,19 +1,109 @@
 <div class="public-matches-page">
 
-  <div class="page-header">
-    <h1>Public Matches</h1>
-    <p>Join an available public match.</p>
-  </div>
+  <section class="matches-hero">
+    <div>
+      <span class="matches-eyebrow">Open games</span>
 
-  <div class="reservation-list">
-    @for (reservation of reservations; track reservation.id) {
-      <app-reservation-card
-        [reservations]="reservation"
-        (reservationUpdated)="loadPublicReservations()">
-      </app-reservation-card>
-    } @empty {
-      <p class="empty-message">No public matches available.</p>
-    }
-  </div>
+      <h1>Find a public match</h1>
+
+      <p>
+        Join an available padel match, check the schedule and book your place in a few clicks.
+      </p>
+    </div>
+
+    <button type="button" class="refresh-button" (click)="loadPublicReservations()">
+      Refresh matches
+    </button>
+  </section>
+
+  <section class="stats-grid">
+    <div class="stat-card">
+      <small>Total public matches</small>
+      <strong>{{ getTotalMatches() }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <small>Today</small>
+      <strong>{{ getTodayMatches() }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <small>Upcoming</small>
+      <strong>{{ getUpcomingMatches() }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <small>Available seats</small>
+      <strong>{{ getAvailableSeatsCount() }}</strong>
+    </div>
+  </section>
+
+  <section class="matches-toolbar">
+    <div>
+      <h2>Available matches</h2>
+      <p>Choose a match and join before all seats are taken.</p>
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'ALL'"
+        (click)="setFilter('ALL')"
+      >
+        All
+      </button>
+
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'TODAY'"
+        (click)="setFilter('TODAY')"
+      >
+        Today
+      </button>
+
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'UPCOMING'"
+        (click)="setFilter('UPCOMING')"
+      >
+        Upcoming
+      </button>
+    </div>
+  </section>
+
+  @if (isLoading) {
+    <div class="state-card">
+      <div class="state-icon loading"></div>
+      <h3>Loading public matches...</h3>
+      <p>Please wait while we refresh the available matches.</p>
+    </div>
+  } @else if (loadingError) {
+    <div class="state-card error">
+      <div class="state-icon">!</div>
+      <h3>Something went wrong</h3>
+      <p>{{ loadingError }}</p>
+
+      <button type="button" (click)="loadPublicReservations()">
+        Try again
+      </button>
+    </div>
+  } @else {
+    <div class="reservation-list">
+      @for (reservation of getFilteredReservations(); track reservation.id) {
+        <app-reservation-card
+          [reservations]="reservation"
+          (reservationUpdated)="loadPublicReservations()">
+        </app-reservation-card>
+      } @empty {
+        <div class="state-card empty">
+          <div class="state-icon">🎾</div>
+          <h3>No public matches available</h3>
+          <p>
+            There are no matches for this filter yet. Create a public reservation to let other players join.
+          </p>
+        </div>
+      }
+    </div>
+  }
 
 </div>

@@ -1,41 +1,63 @@
-<mat-toolbar class="sticky !bg-blue-400 header-toolbar">
+<mat-toolbar class="header-toolbar">
 
-  <button mat-icon-button (click)="layoutService.toggleMenu()">
+  <button mat-icon-button class="menu-button" (click)="layoutService.toggleMenu()">
     <mat-icon>menu</mat-icon>
   </button>
 
-  <span class="header-title">{{ title() }}</span>
+  <div class="brand">
+    <div class="brand-logo">
+      P
+    </div>
+
+    <div class="brand-text">
+      <span>{{ title() }}</span>
+      <small>Club booking</small>
+    </div>
+  </div>
 
   <span class="header-spacer"></span>
 
-  @if (isLoggedIn()) {
-    <span class="connected-label">
-      {{ getConnectedLabel() }}
-    </span>
-  }
+  <div class="header-actions">
 
-  @if (isAdminLoggedIn()) {
-    <button mat-button routerLink="/admin">
-      Admin
-    </button>
-  }
+    @if (isAdminLoggedIn()) {
+      <button mat-button routerLink="/admin" class="header-button admin-button">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span>Admin</span>
+      </button>
+    }
 
-  @if (canShowLoginButton()) {
-    <button mat-button routerLink="/login">
-      Login
-    </button>
-  }
+    @if (canShowLoginButton()) {
+      <button mat-flat-button routerLink="/login" class="login-button">
+        <mat-icon>login</mat-icon>
+        <span>Login</span>
+      </button>
+    }
 
-  @if (hasUnpaidBalance()) {
-    <button mat-button (click)="payBalance()">
-      Pay balance
-    </button>
-  }
+    @if (hasUnpaidBalance()) {
+      <button mat-button class="header-button pay-button" (click)="payBalance()">
+        <mat-icon>payments</mat-icon>
+        <span>Pay balance</span>
+      </button>
+    }
 
-  @if (isLoggedIn()) {
-    <button mat-button (click)="logout()">
-      Logout
-    </button>
-  }
+    @if (isLoggedIn()) {
+      <div class="user-pill">
+        <div class="user-avatar">
+          {{ getUserInitials() }}
+        </div>
+
+        <div class="user-info">
+          <span>{{ getConnectedName() }}</span>
+          <small>{{ getConnectedRoleLabel() }}</small>
+        </div>
+      </div>
+
+      <button mat-button class="header-button logout-button" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>Logout</span>
+      </button>
+    }
+
+  </div>
 
 </mat-toolbar>

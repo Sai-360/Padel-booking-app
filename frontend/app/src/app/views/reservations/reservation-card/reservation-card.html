@@ -1,57 +1,88 @@
-<mat-card>
-
-  <mat-card-header>
-    <mat-card-title>Reservation</mat-card-title>
-    <mat-card-subtitle>
-      {{ getSiteName() }} - {{ getCourtName() }}
-    </mat-card-subtitle>
-  </mat-card-header>
+<mat-card class="reservation-card" [class.past-card]="isPast()" [class.full-card]="isFull()">
 
   <mat-card-content>
 
-    <div class="reservation-info">
+    <div class="card-top">
 
-      <div class="info-row">
-        <span class="label">Site</span>
-        <span class="value">{{ getSiteName() }}</span>
+      <div class="court-icon">
+        <mat-icon>sports_tennis</mat-icon>
       </div>
 
-      <div class="info-row">
-        <span class="label">Court</span>
-        <span class="value">{{ getCourtName() }}</span>
-      </div>
+      <div class="card-heading">
+        <div class="title-line">
+          <h3>{{ getSiteName() }}</h3>
 
-      <div class="info-row">
-        <span class="label">Date</span>
-        <span class="value">{{ reservations().date }}</span>
-      </div>
-
-      <div class="info-row">
-        <span class="label">Time</span>
-        <span class="value">{{ reservations().time }}</span>
-      </div>
-
-      <div class="info-row">
-        <span class="label">Type</span>
-        <span class="type-badge">{{ reservations().type }}</span>
-      </div>
-
-      @if (isOrganizer()) {
-        <div class="info-row">
-          <span class="label">Role</span>
-          <span class="type-badge">Organizer</span>
+          <span class="match-type-badge" [class.private]="!isPublic()">
+            {{ getTypeLabel() }}
+          </span>
         </div>
-      }
 
-      <div class="info-row">
-        <span class="label">Players</span>
-        <span class="value">{{ reservations().players.length }}/4</span>
+        <p>{{ getCourtName() }}</p>
       </div>
 
-      <div class="info-row">
-        <span class="label">Price</span>
-        <span class="value price">{{ reservations().price }} €</span>
+      <div class="price-pill">
+        <small>Price</small>
+        <strong>{{ getPriceLabel() }}</strong>
       </div>
+
+    </div>
+
+    <div class="details-grid">
+
+      <div class="detail-item">
+        <mat-icon>calendar_today</mat-icon>
+        <div>
+          <small>Date</small>
+          <strong>{{ getDateLabel() }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <mat-icon>schedule</mat-icon>
+        <div>
+          <small>Time</small>
+          <strong>{{ getTimeLabel() }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <mat-icon>group</mat-icon>
+        <div>
+          <small>Players</small>
+          <strong>{{ getPlayersCount() }}/{{ maxPlayers }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <mat-icon>verified</mat-icon>
+        <div>
+          <small>Status</small>
+          <strong>{{ getStatusLabel() }}</strong>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="players-strip">
+
+      <div class="players-left">
+        <div class="player-dots">
+          @for (slot of getPlayerSlots(); track slot) {
+            <span [class.filled]="slot <= getPlayersCount()">
+              {{ slot }}
+            </span>
+          }
+        </div>
+
+        <div>
+          <strong>{{ getPlayersCount() }} players joined</strong>
+          <small>{{ getAvailableSeats() }} seats left</small>
+        </div>
+      </div>
+
+      <span class="role-badge" [class.organizer]="isOrganizer()" [class.player]="hasJoined() && !isOrganizer()">
+        {{ getRoleLabel() }}
+      </span>
 
     </div>
 
@@ -63,41 +94,61 @@
 
   </mat-card-content>
 
-  <mat-card-actions>
+  <mat-card-actions class="card-actions">
+
+    @if (canShowLoginToJoin()) {
+      <button mat-flat-button class="primary-action" (click)="goToLogin()">
+        <mat-icon>login</mat-icon>
+        Login to join
+      </button>
+    }
 
     @if (canJoin()) {
-      <button mat-flat-button (click)="join()">
-        Join
+      <button mat-flat-button class="primary-action" (click)="join()">
+        <mat-icon>person_add</mat-icon>
+        Join match
       </button>
     }
 
     @if (canPay()) {
-      <button mat-flat-button color="primary" (click)="pay()">
-        Pay
+      <button mat-flat-button class="primary-action pay-action" (click)="pay()">
+        <mat-icon>payments</mat-icon>
+        Pay now
       </button>
     }
 
     @if (hasPaid()) {
-      <button mat-flat-button disabled>
+      <button mat-flat-button class="success-action" disabled>
+        <mat-icon>check_circle</mat-icon>
         Paid
       </button>
     }
 
     @if (isOrganizer()) {
-      <button mat-flat-button disabled>
+      <span class="action-badge">
+        <mat-icon>stars</mat-icon>
         Organizer
-      </button>
+      </span>
     }
 
     @if (isFull() && !hasJoined() && !isOrganizer()) {
-      <button mat-flat-button disabled>
+      <button mat-flat-button class="disabled-action" disabled>
+        <mat-icon>block</mat-icon>
         Full
       </button>
     }
 
     @if (!isPublic() && !hasJoined() && !isOrganizer()) {
-      <button mat-flat-button disabled>
-        Private Match
+      <button mat-flat-button class="disabled-action" disabled>
+        <mat-icon>lock</mat-icon>
+        Private match
+      </button>
+    }
+
+    @if (isPast()) {
+      <button mat-flat-button class="disabled-action" disabled>
+        <mat-icon>history</mat-icon>
+        Finished
       </button>
     }
 

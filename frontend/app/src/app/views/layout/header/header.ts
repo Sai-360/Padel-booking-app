@@ -64,12 +64,15 @@ export class Header implements OnInit {
     return this.adminAuthService.isAdminLoggedIn();
   }
 
-  getConnectedLabel(): string {
-    const adminUser = localStorage.getItem('adminUser');
+  canShowLoginButton(): boolean {
+    return !this.userService.isLoggedIn() && !this.adminAuthService.isAdminLoggedIn();
+  }
+
+  getConnectedName(): string {
+    const adminUser = this.getStoredAdminUser();
 
     if (adminUser && this.adminAuthService.isAdminLoggedIn()) {
-      const parsedAdmin = JSON.parse(adminUser);
-      return `Connected as ${parsedAdmin.name}`;
+      return adminUser.name || adminUser.matricule || 'Admin';
     }
 
     const currentUser = this.userService.getCurrentUserOrNull();
@@ -78,11 +81,67 @@ export class Header implements OnInit {
       return '';
     }
 
-    if (currentUser.unpaidBalance && currentUser.unpaidBalance > 0) {
-      return `Connected as ${currentUser.name} - unpaid balance: ${currentUser.unpaidBalance}€`;
+    return currentUser.name;
+  }
+
+  getConnectedRoleLabel(): string {
+    const adminUser = this.getStoredAdminUser();
+
+    if (adminUser && this.adminAuthService.isAdminLoggedIn()) {
+      return this.formatAdminRole(adminUser.adminRole);
     }
 
-    return `Connected as ${currentUser.name}`;
+    const currentUser = this.userService.getCurrentUserOrNull();
+
+    if (!currentUser) {
+      return '';
+    }
+
+    if (currentUser.type === 'GLOBAL') {
+      return 'Global Member';
+    }
+
+    if (currentUser.type === 'SITE') {
+      return 'Site Member';
+    }
+
+    if (currentUser.type === 'FREE') {
+      return 'Free Member';
+    }
+
+    return 'Member';
+  }
+
+  getConnectedLabel(): string {
+    const connectedName = this.getConnectedName();
+
+    if (!connectedName) {
+      return '';
+    }
+
+    const currentUser = this.userService.getCurrentUserOrNull();
+
+    if (!this.adminAuthService.isAdminLoggedIn() && currentUser?.unpaidBalance && currentUser.unpaidBalance > 0) {
+      return `Connected as ${connectedName} - unpaid balance: ${currentUser.unpaidBalance}€`;
+    }
+
+    return `Connected as ${connectedName}`;
+  }
+
+  getUserInitials(): string {
+    const name = this.getConnectedName();
+
+    if (!name) {
+      return '?';
+    }
+
+    const parts = name.trim().split(' ').filter(part => part.length > 0);
+
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   }
 
   hasUnpaidBalance(): boolean {
@@ -112,13 +171,35 @@ export class Header implements OnInit {
     });
   }
 
-  canShowLoginButton(): boolean {
-    return !this.adminAuthService.isAdminLoggedIn();
-  }
-
   logout(): void {
     this.userService.logout();
     this.adminAuthService.logout();
     this.router.navigate(['/login']);
+  }
+
+  private getStoredAdminUser(): { name?: string; matricule?: string; adminRole?: string } | null {
+    const adminUser = localStorage.getItem('adminUser');
+
+    if (!adminUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(adminUser);
+    } catch {
+      return null;
+    }
+  }
+
+  private formatAdminRole(adminRole?: string): string {
+    if (adminRole === 'GLOBAL_ADMIN') {
+      return 'Global Admin';
+    }
+
+    if (adminRole === 'SITE_ADMIN') {
+      return 'Site Admin';
+    }
+
+    return 'Admin';
   }
 }

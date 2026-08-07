@@ -1,90 +1,240 @@
 <div class="my-reservations-page">
 
-  <div class="page-header">
-    <h1>My Reservations</h1>
-    <p>Reservations you created or joined.</p>
-  </div>
+  <section class="reservations-hero">
+    <div>
+      <span class="reservations-eyebrow">My games</span>
 
-  <div class="reservation-list">
-    @for (reservation of reservations; track reservation.id) {
+      <h1>Manage your reservations</h1>
 
-      <div class="reservation-wrapper">
+      <p>
+        Track your upcoming matches, payments and private invitations from one place.
+      </p>
+    </div>
 
-        <app-reservation-card
-          [reservations]="reservation"
-          (reservationUpdated)="loadMyReservations()">
-        </app-reservation-card>
+    <a routerLink="/book" class="new-booking-button">
+      Book a court
+    </a>
+  </section>
 
-        @if (reservation.type === 'PRIVATE' && reservation.organizerId === currentUserId) {
-          <div class="private-players-card">
-            {{ initPrivatePlayersForm(reservation.id) }}
+  <section class="stats-grid">
+    <div class="stat-card">
+      <small>Total reservations</small>
+      <strong>{{ getTotalReservations() }}</strong>
+    </div>
 
-            <div class="private-card-header">
-              <div>
-                <h3>Add a player to this private reservation</h3>
-                <p>
-                  Reservation ID: {{ reservation.id }}
+    <div class="stat-card">
+      <small>Upcoming</small>
+      <strong>{{ getUpcomingReservationsCount() }}</strong>
+    </div>
+
+    <div class="stat-card">
+      <small>Private matches</small>
+      <strong>{{ getPrivateReservationsCount() }}</strong>
+    </div>
+
+    <div class="stat-card warning">
+      <small>Need payment</small>
+      <strong>{{ getNeedPaymentCount() }}</strong>
+    </div>
+  </section>
+
+  <section class="reservations-toolbar">
+    <div>
+      <h2>Your matches</h2>
+      <p>Filter your reservations by status, role or match type.</p>
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'ALL'"
+        (click)="setFilter('ALL')"
+      >
+        All
+      </button>
+
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'UPCOMING'"
+        (click)="setFilter('UPCOMING')"
+      >
+        Upcoming
+      </button>
+
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'PAST'"
+        (click)="setFilter('PAST')"
+      >
+        Past
+      </button>
+
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'ORGANIZER'"
+        (click)="setFilter('ORGANIZER')"
+      >
+        Organizer
+      </button>
+
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'JOINED'"
+        (click)="setFilter('JOINED')"
+      >
+        Joined
+      </button>
+
+      <button
+        type="button"
+        [class.active]="selectedFilter === 'PRIVATE'"
+        (click)="setFilter('PRIVATE')"
+      >
+        Private
+      </button>
+    </div>
+  </section>
+
+  @if (isLoading) {
+    <div class="state-card">
+      <div class="state-icon loading"></div>
+      <h3>Loading your reservations...</h3>
+      <p>Please wait while we refresh your matches.</p>
+    </div>
+  } @else if (loadingError) {
+    <div class="state-card error">
+      <div class="state-icon">!</div>
+      <h3>Something went wrong</h3>
+      <p>{{ loadingError }}</p>
+
+      <button type="button" (click)="loadMyReservations()">
+        Try again
+      </button>
+    </div>
+  } @else {
+    <div class="reservation-list">
+
+      @for (reservation of getFilteredReservations(); track reservation.id) {
+
+        <div class="reservation-wrapper">
+
+          <app-reservation-card
+            [reservations]="reservation"
+            (reservationUpdated)="loadMyReservations()">
+          </app-reservation-card>
+
+          @if (isPrivateOrganizer(reservation)) {
+            <div class="private-players-card" [class.complete]="!canAddPrivatePlayer(reservation)">
+
+              <div class="private-card-header">
+                <div class="private-title-group">
+                  <div class="private-icon">
+                    <mat-icon>group_add</mat-icon>
+                  </div>
+
+                  <div>
+                    <span class="private-kicker">Private invitation</span>
+                    <h3>Add a player</h3>
+                    <p>
+                      Invite players by matricule. The organizer is already included in the match.
+                    </p>
+                  </div>
+                </div>
+
+                <span class="private-badge">
+                  PRIVATE
+                </span>
+              </div>
+
+              <div class="private-reservation-summary">
+                <span>
+                  <strong>Date</strong>
+                  {{ getDateLabel(reservation) }}
+                </span>
+
+                <span>
+                  <strong>Time</strong>
+                  {{ getTimeLabel(reservation) }}
+                </span>
+
+                <span>
+                  <strong>Players</strong>
+                  {{ getPlayersCount(reservation) }}/{{ maxPlayers }}
+                </span>
+
+                <span>
+                  <strong>Seats left</strong>
+                  {{ getAvailableSeats(reservation) }}
+                </span>
+              </div>
+
+              @if (canAddPrivatePlayer(reservation)) {
+                <div class="private-invite-form">
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Player matricule</mat-label>
+                    <input
+                      matInput
+                      [(ngModel)]="privatePlayersForms[reservation.id]"
+                      placeholder="e.g. G0002">
+                  </mat-form-field>
+
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    type="button"
+                    (click)="addPrivatePlayers(reservation.id)">
+                    Add player
+                  </button>
+
+                </div>
+
+                <p class="private-help">
+                  A private match must contain {{ maxPlayers }} players in total.
                 </p>
-              </div>
+              } @else {
+                <div class="private-complete">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>This private match is complete or already finished.</span>
+                </div>
+              }
 
-              <span class="private-badge">
-                PRIVATE
-              </span>
+              @if (privatePlayersError[reservation.id]) {
+                <div class="private-error">
+                  {{ privatePlayersError[reservation.id] }}
+                </div>
+              }
+
+              @if (privatePlayersMessage[reservation.id]) {
+                <div class="private-success">
+                  {{ privatePlayersMessage[reservation.id] }}
+                </div>
+              }
+
             </div>
+          }
 
-            <div class="private-reservation-summary">
-              <span>Date: {{ reservation.date }}</span>
-              <span>Time: {{ reservation.time }}</span>
-              <span>Players: {{ reservation.players.length }}/4</span>
-            </div>
+        </div>
 
-            <p class="private-help">
-              Add invited players one by one. A private match must contain 4 players in total:
-              the organizer plus 3 invited players.
-            </p>
-
-            <div class="private-player-inputs single-player-input">
-              <mat-form-field appearance="outline">
-                <mat-label>Player matricule</mat-label>
-                <input
-                  matInput
-                  [(ngModel)]="privatePlayersForms[reservation.id]"
-                  placeholder="e.g. G0002">
-              </mat-form-field>
-            </div>
-
-            @if (privatePlayersError[reservation.id]) {
-              <div class="private-error">
-                {{ privatePlayersError[reservation.id] }}
-              </div>
-            }
-
-            @if (privatePlayersMessage[reservation.id]) {
-              <div class="private-success">
-                {{ privatePlayersMessage[reservation.id] }}
-              </div>
-            }
-
-            <button
-              mat-raised-button
-              color="primary"
-              (click)="addPrivatePlayers(reservation.id)">
-              Add this player
-            </button>
+      } @empty {
+        <div class="state-card empty">
+          <div class="state-icon">
+            🎾
           </div>
-        }
 
-        @if (reservation.type !== 'PRIVATE' && reservation.organizerId === currentUserId) {
-          <div class="not-private-info">
-            This reservation is {{ reservation.type }}. Manual player invitation is only available for PRIVATE matches.
-          </div>
-        }
+          <h3>No reservations found</h3>
 
-      </div>
+          <p>
+            You do not have reservations for this filter yet. Create a new match or join a public one.
+          </p>
 
-    } @empty {
-      <p class="empty-message">You have no reservations yet.</p>
-    }
-  </div>
+          <a routerLink="/book" class="empty-action">
+            Book a court
+          </a>
+        </div>
+      }
+
+    </div>
+  }
 
 </div>
