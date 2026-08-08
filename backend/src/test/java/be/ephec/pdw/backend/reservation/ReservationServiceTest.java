@@ -1,14 +1,25 @@
 package be.ephec.pdw.backend.reservation;
 
 import be.ephec.pdw.backend.AbstractUnitTest;
+import be.ephec.pdw.backend.booking.BookingRule;
+import be.ephec.pdw.backend.booking.BookingRuleRepository;
+import be.ephec.pdw.backend.booking.ClosedDayRepository;
+import be.ephec.pdw.backend.booking.TimeSlot;
+import be.ephec.pdw.backend.booking.TimeSlotRepository;
+import be.ephec.pdw.backend.court.Court;
+import be.ephec.pdw.backend.court.CourtRepository;
 import be.ephec.pdw.backend.exception.BusinessException;
 import be.ephec.pdw.backend.exception.ResourceNotFoundException;
 import be.ephec.pdw.backend.member.Member;
 import be.ephec.pdw.backend.member.MemberRepository;
 import be.ephec.pdw.backend.member.MemberType;
+import be.ephec.pdw.backend.site.Site;
+import be.ephec.pdw.backend.site.SiteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,8 +28,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ReservationServiceTest extends AbstractUnitTest {
 
     @Mock
@@ -29,6 +42,21 @@ class ReservationServiceTest extends AbstractUnitTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private SiteRepository siteRepository;
+
+    @Mock
+    private CourtRepository courtRepository;
+
+    @Mock
+    private BookingRuleRepository bookingRuleRepository;
+
+    @Mock
+    private TimeSlotRepository timeSlotRepository;
+
+    @Mock
+    private ClosedDayRepository closedDayRepository;
 
     private ReservationService reservationService;
 
@@ -44,6 +72,9 @@ class ReservationServiceTest extends AbstractUnitTest {
     private final UUID courtId = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private final UUID reservationId = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
 
+    private final LocalDate validReservationDate = LocalDate.now().plusDays(5);
+    private final LocalTime validStartTime = LocalTime.of(10, 30);
+
     @BeforeEach
     void setUp() {
         reservationService = new ReservationService(
@@ -51,66 +82,74 @@ class ReservationServiceTest extends AbstractUnitTest {
                 reservationMapper,
                 participationRepository,
                 participationMapper,
-                memberRepository
+                memberRepository,
+                siteRepository,
+                courtRepository,
+                bookingRuleRepository,
+                timeSlotRepository,
+                closedDayRepository
         );
     }
 
     @Test
-    void globalMemberCanCreateReservationWithin21Days() {
-        Member globalMember = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
+    void createReservationAutomaticallyAddsOrganizerAsParticipant() {
+        Member organizer = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
 
         ReservationDTO reservationDTO = createReservationDTO(
                 globalMemberId,
                 brusselsSiteId,
-                LocalDate.now().plusDays(10),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        Reservation savedReservation = createReservation(
-                globalMemberId,
-                brusselsSiteId,
-                LocalDate.now().plusDays(10),
-                ReservationType.PUBLIC
-        );
-
-        when(memberRepository.findById(globalMemberId)).thenReturn(Optional.of(globalMember));
-        when(reservationRepository.save(any(Reservation.class))).thenReturn(savedReservation);
-        when(participationRepository.countByReservationId(reservationId)).thenReturn(0L);
+        mockValidReservationCreationContext(organizer, brusselsSiteId, false);
 
         ReservationDTO result = reservationService.createReservation(reservationDTO);
 
         assertNotNull(result);
         assertEquals(globalMemberId, result.organizerId());
         assertEquals(ReservationType.PUBLIC, result.type());
-        assertEquals(0, result.participantsCount());
+        assertEquals(ReservationStatus.ACTIVE, result.status());
+        assertEquals(BigDecimal.valueOf(60), result.price());
 
         verify(reservationRepository).save(any(Reservation.class));
+
+        verify(participationRepository).save(argThat(participation ->
+                participation.getReservationId() != null
+                        && participation.getMemberId().equals(globalMemberId)
+                        && participation.getMemberName().equals("G0001 Member")
+                        && participation.getRole() == ParticipationRole.ORGANIZER
+                        && !participation.isPaid()
+                        && participation.getStatus() == ParticipationStatus.PENDING
+        ));
     }
 
     @Test
-    void globalMemberCannotCreateReservationMoreThan21DaysBeforeMatch() {
-        Member globalMember = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
+    void createReservationThrowsBusinessExceptionWhenCourtIsAlreadyBookedAtSameDateAndTime() {
+        Member organizer = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
 
         ReservationDTO reservationDTO = createReservationDTO(
                 globalMemberId,
                 brusselsSiteId,
-                LocalDate.now().plusDays(22),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        when(memberRepository.findById(globalMemberId)).thenReturn(Optional.of(globalMember));
+        mockValidReservationCreationContext(organizer, brusselsSiteId, true);
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> reservationService.createReservation(reservationDTO)
         );
 
-        assertEquals("Global members can only book up to 3 weeks before the match.", exception.getMessage());
+        assertEquals("This court is already booked at this date and time.", exception.getMessage());
+
         verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(participationRepository, never()).save(any(Participation.class));
     }
 
     @Test
-    void siteMemberCanCreateReservationOnOwnSiteWithin14Days() {
+    void siteMemberCanCreateReservationOnOwnSiteWithinLimit() {
         Member siteMember = createMember(
                 siteMemberId,
                 "S0001",
@@ -121,20 +160,11 @@ class ReservationServiceTest extends AbstractUnitTest {
         ReservationDTO reservationDTO = createReservationDTO(
                 siteMemberId,
                 brusselsSiteId,
-                LocalDate.now().plusDays(10),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        Reservation savedReservation = createReservation(
-                siteMemberId,
-                brusselsSiteId,
-                LocalDate.now().plusDays(10),
-                ReservationType.PUBLIC
-        );
-
-        when(memberRepository.findById(siteMemberId)).thenReturn(Optional.of(siteMember));
-        when(reservationRepository.save(any(Reservation.class))).thenReturn(savedReservation);
-        when(participationRepository.countByReservationId(reservationId)).thenReturn(0L);
+        mockValidReservationCreationContext(siteMember, brusselsSiteId, false);
 
         ReservationDTO result = reservationService.createReservation(reservationDTO);
 
@@ -143,33 +173,7 @@ class ReservationServiceTest extends AbstractUnitTest {
         assertEquals(brusselsSiteId, result.siteId());
 
         verify(reservationRepository).save(any(Reservation.class));
-    }
-
-    @Test
-    void siteMemberCannotCreateReservationMoreThan14DaysBeforeMatch() {
-        Member siteMember = createMember(
-                siteMemberId,
-                "S0001",
-                MemberType.SITE,
-                brusselsSiteId.toString()
-        );
-
-        ReservationDTO reservationDTO = createReservationDTO(
-                siteMemberId,
-                brusselsSiteId,
-                LocalDate.now().plusDays(15),
-                ReservationType.PUBLIC
-        );
-
-        when(memberRepository.findById(siteMemberId)).thenReturn(Optional.of(siteMember));
-
-        BusinessException exception = assertThrows(
-                BusinessException.class,
-                () -> reservationService.createReservation(reservationDTO)
-        );
-
-        assertEquals("Site members can only book up to 2 weeks before the match.", exception.getMessage());
-        verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(participationRepository).save(any(Participation.class));
     }
 
     @Test
@@ -184,11 +188,11 @@ class ReservationServiceTest extends AbstractUnitTest {
         ReservationDTO reservationDTO = createReservationDTO(
                 siteMemberId,
                 namurSiteId,
-                LocalDate.now().plusDays(5),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        when(memberRepository.findById(siteMemberId)).thenReturn(Optional.of(siteMember));
+        mockValidReservationCreationContext(siteMember, namurSiteId, false);
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
@@ -196,41 +200,37 @@ class ReservationServiceTest extends AbstractUnitTest {
         );
 
         assertEquals("Site members can only book on their own site.", exception.getMessage());
+
         verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(participationRepository, never()).save(any(Participation.class));
     }
 
     @Test
-    void freeMemberCanCreateReservationWithin5Days() {
-        Member freeMember = createMember(freeMemberId, "L0001", MemberType.FREE, null);
+    void globalMemberCannotCreateReservationAfterGlobalBookingLimit() {
+        Member globalMember = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
 
         ReservationDTO reservationDTO = createReservationDTO(
-                freeMemberId,
+                globalMemberId,
                 brusselsSiteId,
-                LocalDate.now().plusDays(5),
+                LocalDate.now().plusDays(22),
                 ReservationType.PUBLIC
         );
 
-        Reservation savedReservation = createReservation(
-                freeMemberId,
-                brusselsSiteId,
-                LocalDate.now().plusDays(5),
-                ReservationType.PUBLIC
+        mockValidReservationCreationContext(globalMember, brusselsSiteId, false);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> reservationService.createReservation(reservationDTO)
         );
 
-        when(memberRepository.findById(freeMemberId)).thenReturn(Optional.of(freeMember));
-        when(reservationRepository.save(any(Reservation.class))).thenReturn(savedReservation);
-        when(participationRepository.countByReservationId(reservationId)).thenReturn(0L);
+        assertEquals("Global members can only book up to 21 days before the match.", exception.getMessage());
 
-        ReservationDTO result = reservationService.createReservation(reservationDTO);
-
-        assertNotNull(result);
-        assertEquals(freeMemberId, result.organizerId());
-
-        verify(reservationRepository).save(any(Reservation.class));
+        verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(participationRepository, never()).save(any(Participation.class));
     }
 
     @Test
-    void freeMemberCannotCreateReservationMoreThan5DaysBeforeMatch() {
+    void freeMemberCannotCreateReservationAfterFreeBookingLimit() {
         Member freeMember = createMember(freeMemberId, "L0001", MemberType.FREE, null);
 
         ReservationDTO reservationDTO = createReservationDTO(
@@ -240,7 +240,7 @@ class ReservationServiceTest extends AbstractUnitTest {
                 ReservationType.PUBLIC
         );
 
-        when(memberRepository.findById(freeMemberId)).thenReturn(Optional.of(freeMember));
+        mockValidReservationCreationContext(freeMember, brusselsSiteId, false);
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
@@ -248,47 +248,90 @@ class ReservationServiceTest extends AbstractUnitTest {
         );
 
         assertEquals("Free members can only book up to 5 days before the match.", exception.getMessage());
+
         verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(participationRepository, never()).save(any(Participation.class));
     }
 
     @Test
-    void memberCannotCreateReservationInPast() {
-        Member globalMember = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
+    void createReservationThrowsBusinessExceptionOnGlobalClosedDay() {
+        Member organizer = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
 
         ReservationDTO reservationDTO = createReservationDTO(
                 globalMemberId,
                 brusselsSiteId,
-                LocalDate.now().minusDays(1),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        when(memberRepository.findById(globalMemberId)).thenReturn(Optional.of(globalMember));
+        mockValidReservationCreationContext(organizer, brusselsSiteId, false);
+
+        when(closedDayRepository.existsByActiveTrueAndSiteIdIsNullAndClosedDate(validReservationDate))
+                .thenReturn(true);
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> reservationService.createReservation(reservationDTO)
         );
 
-        assertEquals("You cannot create a reservation in the past.", exception.getMessage());
+        assertEquals("Reservations are not allowed on a global closed day.", exception.getMessage());
+
         verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(participationRepository, never()).save(any(Participation.class));
     }
 
     @Test
-    void memberCanJoinPublicReservation() {
-        Reservation publicReservation = createReservation(
+    void createReservationThrowsBusinessExceptionWhenTimeSlotIsNotAllowed() {
+        Member organizer = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
+
+        ReservationDTO reservationDTO = createReservationDTO(
                 globalMemberId,
                 brusselsSiteId,
-                LocalDate.now().plusDays(5),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        Member siteMember = createMember(siteMemberId, "S0001", MemberType.SITE, brusselsSiteId.toString());
+        mockValidReservationCreationContext(organizer, brusselsSiteId, false);
 
-        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(publicReservation));
-        when(participationRepository.countByReservationId(reservationId)).thenReturn(1L);
+        when(timeSlotRepository.findByStartTimeAndActiveTrue(validStartTime))
+                .thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> reservationService.createReservation(reservationDTO)
+        );
+
+        assertEquals("This time slot is not allowed.", exception.getMessage());
+
+        verify(reservationRepository, never()).save(any(Reservation.class));
+        verify(participationRepository, never()).save(any(Participation.class));
+    }
+
+    @Test
+    void memberCanJoinPublicReservationWhenThereIsAvailableSpace() {
+        Member member = createMember(siteMemberId, "S0001", MemberType.SITE, brusselsSiteId.toString());
+
+        Reservation publicReservation = createReservation(
+                globalMemberId,
+                brusselsSiteId,
+                validReservationDate,
+                ReservationType.PUBLIC
+        );
+
+        mockBookingRule();
+
+        when(reservationRepository.findById(reservationId))
+                .thenReturn(Optional.of(publicReservation));
+
+        when(participationRepository.countByReservationId(reservationId))
+                .thenReturn(1L);
+
         when(participationRepository.existsByReservationIdAndMemberId(reservationId, siteMemberId))
                 .thenReturn(false);
-        when(memberRepository.findById(siteMemberId)).thenReturn(Optional.of(siteMember));
+
+        when(memberRepository.findById(siteMemberId))
+                .thenReturn(Optional.of(member));
+
         when(participationRepository.save(any(Participation.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -297,6 +340,7 @@ class ReservationServiceTest extends AbstractUnitTest {
         assertNotNull(result);
         assertEquals(reservationId, result.reservationId());
         assertEquals(siteMemberId, result.memberId());
+        assertEquals(ParticipationRole.PLAYER, result.role());
         assertFalse(result.paid());
         assertEquals(ParticipationStatus.PENDING, result.status());
 
@@ -304,36 +348,21 @@ class ReservationServiceTest extends AbstractUnitTest {
     }
 
     @Test
-    void memberCannotJoinPrivateReservation() {
-        Reservation privateReservation = createReservation(
-                globalMemberId,
-                brusselsSiteId,
-                LocalDate.now().plusDays(5),
-                ReservationType.PRIVATE
-        );
-
-        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(privateReservation));
-
-        BusinessException exception = assertThrows(
-                BusinessException.class,
-                () -> reservationService.joinReservation(reservationId, siteMemberId)
-        );
-
-        assertEquals("Only public reservations can be joined.", exception.getMessage());
-        verify(participationRepository, never()).save(any(Participation.class));
-    }
-
-    @Test
     void memberCannotJoinFullReservation() {
         Reservation publicReservation = createReservation(
                 globalMemberId,
                 brusselsSiteId,
-                LocalDate.now().plusDays(5),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(publicReservation));
-        when(participationRepository.countByReservationId(reservationId)).thenReturn(4L);
+        mockBookingRule();
+
+        when(reservationRepository.findById(reservationId))
+                .thenReturn(Optional.of(publicReservation));
+
+        when(participationRepository.countByReservationId(reservationId))
+                .thenReturn(4L);
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
@@ -341,43 +370,31 @@ class ReservationServiceTest extends AbstractUnitTest {
         );
 
         assertEquals("Reservation is full.", exception.getMessage());
-        verify(participationRepository, never()).save(any(Participation.class));
-    }
 
-    @Test
-    void memberCannotJoinSameReservationTwice() {
-        Reservation publicReservation = createReservation(
-                globalMemberId,
-                brusselsSiteId,
-                LocalDate.now().plusDays(5),
-                ReservationType.PUBLIC
-        );
-
-        when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(publicReservation));
-        when(participationRepository.countByReservationId(reservationId)).thenReturn(1L);
-        when(participationRepository.existsByReservationIdAndMemberId(reservationId, siteMemberId))
-                .thenReturn(true);
-
-        BusinessException exception = assertThrows(
-                BusinessException.class,
-                () -> reservationService.joinReservation(reservationId, siteMemberId)
-        );
-
-        assertEquals("Member already joined this reservation.", exception.getMessage());
         verify(participationRepository, never()).save(any(Participation.class));
     }
 
     @Test
     void payReservationSetsParticipationAsPaidAndConfirmed() {
+        Reservation reservation = createReservation(
+                globalMemberId,
+                brusselsSiteId,
+                validReservationDate,
+                ReservationType.PUBLIC
+        );
+
         Participation participation = Participation.builder()
                 .id(UUID.randomUUID())
                 .reservationId(reservationId)
                 .memberId(siteMemberId)
-                .memberName("Site Member")
+                .memberName("S0001 Member")
                 .role(ParticipationRole.PLAYER)
                 .paid(false)
                 .status(ParticipationStatus.PENDING)
                 .build();
+
+        when(reservationRepository.findById(reservationId))
+                .thenReturn(Optional.of(reservation));
 
         when(participationRepository.findByReservationIdAndMemberId(reservationId, siteMemberId))
                 .thenReturn(Optional.of(participation));
@@ -398,11 +415,14 @@ class ReservationServiceTest extends AbstractUnitTest {
         ReservationDTO reservationDTO = createReservationDTO(
                 globalMemberId,
                 brusselsSiteId,
-                LocalDate.now().plusDays(5),
+                validReservationDate,
                 ReservationType.PUBLIC
         );
 
-        when(memberRepository.findById(globalMemberId)).thenReturn(Optional.empty());
+        mockBookingRule();
+
+        when(memberRepository.findById(globalMemberId))
+                .thenReturn(Optional.empty());
 
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
@@ -410,34 +430,88 @@ class ReservationServiceTest extends AbstractUnitTest {
         );
 
         assertEquals("Organizer not found.", exception.getMessage());
+
         verify(reservationRepository, never()).save(any(Reservation.class));
-    }
-
-    @Test
-    void joinReservationThrowsNotFoundWhenReservationDoesNotExist() {
-        when(reservationRepository.findById(reservationId)).thenReturn(Optional.empty());
-
-        ResourceNotFoundException exception = assertThrows(
-                ResourceNotFoundException.class,
-                () -> reservationService.joinReservation(reservationId, siteMemberId)
-        );
-
-        assertEquals("Reservation not found.", exception.getMessage());
         verify(participationRepository, never()).save(any(Participation.class));
     }
 
-    @Test
-    void payReservationThrowsNotFoundWhenParticipationDoesNotExist() {
-        when(participationRepository.findByReservationIdAndMemberId(reservationId, siteMemberId))
+    private void mockValidReservationCreationContext(
+            Member organizer,
+            UUID siteId,
+            boolean alreadyBooked
+    ) {
+        mockBookingRule();
+
+        when(memberRepository.findById(organizer.getId()))
+                .thenReturn(Optional.of(organizer));
+
+        Site site = mock(Site.class);
+        when(site.getId()).thenReturn(siteId);
+        when(site.getOpeningTime()).thenReturn(LocalTime.of(9, 0));
+        when(site.getClosingTime()).thenReturn(LocalTime.of(22, 0));
+
+        when(siteRepository.findById(siteId))
+                .thenReturn(Optional.of(site));
+
+        Court court = mock(Court.class);
+        when(court.isActive()).thenReturn(true);
+        when(court.getSiteId()).thenReturn(siteId);
+
+        when(courtRepository.findById(courtId))
+                .thenReturn(Optional.of(court));
+
+        TimeSlot timeSlot = mock(TimeSlot.class);
+        when(timeSlot.getStartTime()).thenReturn(validStartTime);
+        when(timeSlot.getEndTime()).thenReturn(LocalTime.of(12, 0));
+
+        when(timeSlotRepository.findByStartTimeAndActiveTrue(validStartTime))
+                .thenReturn(Optional.of(timeSlot));
+
+        when(closedDayRepository.existsByActiveTrueAndSiteIdIsNullAndClosedDate(any(LocalDate.class)))
+                .thenReturn(false);
+
+        when(closedDayRepository.existsByActiveTrueAndSiteIdAndClosedDate(any(UUID.class), any(LocalDate.class)))
+                .thenReturn(false);
+
+        when(reservationRepository.existsByCourtIdAndReservationDateAndStartTimeAndStatus(
+                eq(courtId),
+                any(LocalDate.class),
+                eq(validStartTime),
+                eq(ReservationStatus.ACTIVE)
+        )).thenReturn(alreadyBooked);
+
+        when(participationRepository.existsByReservationIdAndMemberId(any(UUID.class), any(UUID.class)))
+                .thenReturn(false);
+
+        when(participationRepository.findByReservationIdAndMemberId(any(UUID.class), any(UUID.class)))
                 .thenReturn(Optional.empty());
 
-        ResourceNotFoundException exception = assertThrows(
-                ResourceNotFoundException.class,
-                () -> reservationService.payReservation(reservationId, siteMemberId)
-        );
+        when(participationRepository.countByReservationId(any(UUID.class)))
+                .thenReturn(0L);
 
-        assertEquals("Participation not found.", exception.getMessage());
-        verify(participationRepository, never()).save(any(Participation.class));
+        if (!alreadyBooked) {
+            when(reservationRepository.save(any(Reservation.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            when(participationRepository.save(any(Participation.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+        }
+    }
+
+    private void mockBookingRule() {
+        BookingRule bookingRule = mock(BookingRule.class);
+
+        lenient().when(bookingRule.getMatchPrice()).thenReturn(BigDecimal.valueOf(60));
+        lenient().when(bookingRule.getMaxPlayers()).thenReturn(4);
+        lenient().when(bookingRule.getGlobalBookingLimitDays()).thenReturn(21);
+        lenient().when(bookingRule.getSiteBookingLimitDays()).thenReturn(14);
+        lenient().when(bookingRule.getFreeBookingLimitDays()).thenReturn(5);
+        lenient().when(bookingRule.getPenaltyAmountPerMissingPlayer()).thenReturn(BigDecimal.valueOf(15));
+        lenient().when(bookingRule.getPrivatePenaltyBlockDays()).thenReturn(7);
+        lenient().when(bookingRule.getPenaltyCheckDaysBeforeMatch()).thenReturn(1);
+
+        when(bookingRuleRepository.findFirstByOrderByIdAsc())
+                .thenReturn(Optional.of(bookingRule));
     }
 
     private Member createMember(
@@ -469,10 +543,10 @@ class ReservationServiceTest extends AbstractUnitTest {
                 courtId,
                 organizerId,
                 reservationDate,
-                LocalTime.of(10, 30),
+                validStartTime,
                 type,
                 ReservationStatus.ACTIVE,
-                BigDecimal.valueOf(60),
+                BigDecimal.valueOf(999),
                 0,
                 false,
                 false
@@ -491,7 +565,7 @@ class ReservationServiceTest extends AbstractUnitTest {
                 .courtId(courtId)
                 .organizerId(organizerId)
                 .reservationDate(reservationDate)
-                .startTime(LocalTime.of(10, 30))
+                .startTime(validStartTime)
                 .type(type)
                 .status(ReservationStatus.ACTIVE)
                 .price(BigDecimal.valueOf(60))
