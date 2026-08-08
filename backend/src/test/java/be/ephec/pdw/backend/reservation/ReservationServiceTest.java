@@ -24,6 +24,7 @@ import org.mockito.quality.Strictness;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -408,6 +409,79 @@ class ReservationServiceTest extends AbstractUnitTest {
         assertEquals(ParticipationStatus.CONFIRMED, result.status());
 
         verify(participationRepository).save(any(Participation.class));
+    }
+
+    @Test
+    void automaticallyApplyUnpaidBalanceForTomorrowPublicReservationsReleasesUnpaidPlayerPlacesAndChargesOrganizer() {
+        mockBookingRule();
+
+        Reservation publicReservation = createReservation(
+                globalMemberId,
+                brusselsSiteId,
+                LocalDate.now().plusDays(1),
+                ReservationType.PUBLIC
+        );
+
+        Member organizer = createMember(globalMemberId, "G0001", MemberType.GLOBAL, null);
+
+        Participation organizerParticipation = Participation.builder()
+                .id(UUID.fromString("aaaaaaaa-1111-1111-1111-111111111111"))
+                .reservationId(reservationId)
+                .memberId(globalMemberId)
+                .memberName("G0001 Member")
+                .role(ParticipationRole.ORGANIZER)
+                .paid(true)
+                .status(ParticipationStatus.CONFIRMED)
+                .build();
+
+        Participation paidPlayer = Participation.builder()
+                .id(UUID.fromString("aaaaaaaa-2222-2222-2222-222222222222"))
+                .reservationId(reservationId)
+                .memberId(siteMemberId)
+                .memberName("S0001 Member")
+                .role(ParticipationRole.PLAYER)
+                .paid(true)
+                .status(ParticipationStatus.CONFIRMED)
+                .build();
+
+        Participation unpaidPlayer = Participation.builder()
+                .id(UUID.fromString("aaaaaaaa-3333-3333-3333-333333333333"))
+                .reservationId(reservationId)
+                .memberId(freeMemberId)
+                .memberName("L0001 Member")
+                .role(ParticipationRole.PLAYER)
+                .paid(false)
+                .status(ParticipationStatus.PENDING)
+                .build();
+
+        when(reservationRepository.findByTypeAndReservationDate(
+                ReservationType.PUBLIC,
+                LocalDate.now().plusDays(1)
+        )).thenReturn(List.of(publicReservation));
+
+        when(participationRepository.findByReservationId(reservationId))
+                .thenReturn(List.of(organizerParticipation, paidPlayer, unpaidPlayer));
+
+        when(memberRepository.findById(globalMemberId))
+                .thenReturn(Optional.of(organizer));
+
+        when(memberRepository.save(any(Member.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(reservationRepository.save(any(Reservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        reservationService.automaticallyApplyUnpaidBalanceForTomorrowPublicReservations();
+
+        verify(participationRepository).delete(unpaidPlayer);
+        verify(participationRepository, never()).delete(organizerParticipation);
+        verify(participationRepository, never()).delete(paidPlayer);
+
+        assertEquals(BigDecimal.valueOf(30), organizer.getUnpaidBalance());
+        assertTrue(publicReservation.isBalanceApplied());
+
+        verify(memberRepository).save(organizer);
+        verify(reservationRepository).save(publicReservation);
     }
 
     @Test

@@ -368,10 +368,14 @@ public class ReservationService {
                 continue;
             }
 
-            long paidParticipantsCount = participationRepository.findByReservationId(reservation.getId())
-                    .stream()
+            List<Participation> participations =
+                    participationRepository.findByReservationId(reservation.getId());
+
+            long paidParticipantsCount = participations.stream()
                     .filter(Participation::isPaid)
                     .count();
+
+            releaseUnpaidPlayerPlaces(participations);
 
             if (paidParticipantsCount >= bookingRule.getMaxPlayers()) {
                 reservation.setBalanceApplied(true);
@@ -380,6 +384,7 @@ public class ReservationService {
             }
 
             int missingPlayers = bookingRule.getMaxPlayers() - (int) paidParticipantsCount;
+
             BigDecimal amountDue = BigDecimal.valueOf(missingPlayers)
                     .multiply(bookingRule.getPenaltyAmountPerMissingPlayer());
 
@@ -396,6 +401,13 @@ public class ReservationService {
             reservation.setBalanceApplied(true);
             reservationRepository.save(reservation);
         }
+    }
+
+    private void releaseUnpaidPlayerPlaces(List<Participation> participations) {
+        participations.stream()
+                .filter(participation -> participation.getRole() == ParticipationRole.PLAYER)
+                .filter(participation -> !participation.isPaid())
+                .forEach(participationRepository::delete);
     }
 
     private ReservationDTO toDTOWithUserState(Reservation reservation, UUID currentUserId) {
