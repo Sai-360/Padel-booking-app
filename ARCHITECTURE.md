@@ -526,9 +526,21 @@ L’admin de site ne voit que les données liées à son site.
 
 Le backend utilise Springdoc OpenAPI.
 
-Swagger documente l’API REST et permet de tester les endpoints.
+Swagger documente l’API REST et permet de tester les endpoints lorsque le backend est démarré.
 
-Il permet notamment de tester :
+URL Swagger :
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+ou :
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+Swagger permet notamment de tester :
 
 - les membres ;
 - les sites ;
