@@ -1,26 +1,14 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import { ReservationsService } from '../reservations/reservations.service';
 import { Reservation } from '../../model/Reservations';
 import { ReservationCard } from '../reservations/reservation-card/reservation-card';
+import { AdminApiService, AdminMemberDTO } from '../../services/admin-api.service';
 
 type AdminReservationFilter = 'ALL' | 'ACTIVE' | 'PUBLIC' | 'PRIVATE' | 'PAST';
 type AdminMemberFilter = 'ALL' | 'ADMINS' | 'BALANCE' | 'BLOCKED';
-
-interface AdminMemberDTO {
-  id: string;
-  matricule: string;
-  name: string;
-  type: string;
-  siteId: string | null;
-  unpaidBalance: number;
-  blockedUntil: string | null;
-  adminRole: string;
-}
 
 type ReservationWithCount = Reservation & {
   participantsCount?: number;
@@ -40,10 +28,7 @@ type ReservationWithCount = Reservation & {
 })
 export class Admin implements OnInit {
 
-  private readonly reservationsService = inject(ReservationsService);
-  private readonly http = inject(HttpClient);
-
-  private readonly adminApiUrl = 'http://localhost:8080/admin';
+  private readonly adminApiService = inject(AdminApiService);
 
   reservations: Reservation[] = [];
   members: AdminMemberDTO[] = [];
@@ -70,13 +55,13 @@ export class Admin implements OnInit {
     this.loadingReservations = true;
     this.errorMessage = '';
 
-    this.reservationsService.getReservation().subscribe({
+    this.adminApiService.getAdminReservations().subscribe({
       next: reservations => {
         this.reservations = reservations;
         this.loadingReservations = false;
       },
       error: error => {
-        this.errorMessage = 'Could not load admin reservations.';
+        this.errorMessage = 'Could not load protected admin reservations.';
         this.loadingReservations = false;
         console.error(error);
       }
@@ -87,13 +72,13 @@ export class Admin implements OnInit {
     this.loadingMembers = true;
     this.memberErrorMessage = '';
 
-    this.http.get<AdminMemberDTO[]>(`${this.adminApiUrl}/members`).subscribe({
+    this.adminApiService.getAdminMembers().subscribe({
       next: members => {
         this.members = members;
         this.loadingMembers = false;
       },
       error: error => {
-        this.memberErrorMessage = 'Could not load admin members.';
+        this.memberErrorMessage = 'Could not load protected admin members.';
         this.loadingMembers = false;
         console.error(error);
       }
@@ -343,7 +328,6 @@ export class Admin implements OnInit {
 
   isPastReservation(reservation: Reservation): boolean {
     const date = this.getReservationDateTime(reservation);
-    date.setMinutes(date.getMinutes() + 90);
 
     return date.getTime() < Date.now();
   }

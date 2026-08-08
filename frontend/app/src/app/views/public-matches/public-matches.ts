@@ -1,9 +1,15 @@
 import { Component, inject, OnInit } from '@angular/core';
+
 import { ReservationCard } from '../reservations/reservation-card/reservation-card';
 import { ReservationsService } from '../reservations/reservations.service';
 import { Reservation } from '../../model/Reservations';
+import { BookingRuleApiService } from '../../services/booking-rule-api.service';
 
 type PublicMatchFilter = 'ALL' | 'TODAY' | 'UPCOMING';
+
+type ReservationWithBackendCount = Reservation & {
+  participantsCount?: number;
+};
 
 @Component({
   selector: 'app-public-matches',
@@ -15,14 +21,18 @@ type PublicMatchFilter = 'ALL' | 'TODAY' | 'UPCOMING';
 export class PublicMatches implements OnInit {
 
   private reservationsService = inject(ReservationsService);
+  private bookingRuleApiService = inject(BookingRuleApiService);
 
   reservations: Reservation[] = [];
   selectedFilter: PublicMatchFilter = 'ALL';
+
+  maxPlayers: number | null = null;
 
   isLoading = false;
   loadingError = '';
 
   ngOnInit(): void {
+    this.loadBookingRules();
     this.loadPublicReservations();
   }
 
@@ -39,6 +49,17 @@ export class PublicMatches implements OnInit {
         this.isLoading = false;
         this.loadingError = 'Unable to load public matches.';
         console.error('Error loading public reservations', error);
+      }
+    });
+  }
+
+  loadBookingRules(): void {
+    this.bookingRuleApiService.getBookingRules().subscribe({
+      next: bookingRule => {
+        this.maxPlayers = bookingRule.maxPlayers;
+      },
+      error: error => {
+        console.error('Error loading booking rules', error);
       }
     });
   }
@@ -72,12 +93,26 @@ export class PublicMatches implements OnInit {
   }
 
   getAvailableSeatsCount(): number {
+    if (this.maxPlayers === null) {
+      return 0;
+    }
+
     return this.reservations.reduce((total, reservation) => {
-      const playersCount = reservation.players?.length ?? 0;
-      const availableSeats = Math.max(4 - playersCount, 0);
+      const playersCount = this.getPlayersCount(reservation);
+      const availableSeats = Math.max(this.maxPlayers! - playersCount, 0);
 
       return total + availableSeats;
     }, 0);
+  }
+
+  private getPlayersCount(reservation: Reservation): number {
+    const reservationWithCount = reservation as ReservationWithBackendCount;
+
+    if (typeof reservationWithCount.participantsCount === 'number') {
+      return reservationWithCount.participantsCount;
+    }
+
+    return reservation.players?.length ?? 0;
   }
 
   private isToday(dateValue: string): boolean {

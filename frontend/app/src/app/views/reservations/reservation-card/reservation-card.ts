@@ -9,7 +9,10 @@ import { ReservationsService } from '../reservations.service';
 import { UserService } from '../../user/user.service';
 import { SiteApiService } from '../../../services/site-api.service';
 import { CourtApiService } from '../../../services/court-api.service';
-import { BookingRuleApiService } from '../../../services/booking-rule-api.service';
+import {
+  BookingRuleApiService,
+  TimeSlotDTO
+} from '../../../services/booking-rule-api.service';
 
 type ReservationWithBackendCount = Reservation & {
   participantsCount?: number;
@@ -38,6 +41,7 @@ export class ReservationCard implements OnInit {
   private static siteNameCache = new Map<string, string>();
   private static courtNameCache = new Map<string, string>();
   private static maxPlayersCache: number | null = null;
+  private static timeSlotsBySiteCache = new Map<string, TimeSlotDTO[]>();
 
   reservations = input.required<Reservation>();
 
@@ -47,11 +51,15 @@ export class ReservationCard implements OnInit {
 
   siteName = 'Loading site...';
   courtName = 'Loading court...';
-  maxPlayers = 4;
+
+  maxPlayers = 0;
+  timeSlotLabel = '';
+  matchEndTime = '';
 
   ngOnInit(): void {
     this.loadDisplayNames();
-    this.loadMaxPlayers();
+    this.loadBookingRules();
+    this.loadTimeSlotInfo();
   }
 
   private loadDisplayNames(): void {
@@ -101,7 +109,7 @@ export class ReservationCard implements OnInit {
     }
   }
 
-  private loadMaxPlayers(): void {
+  private loadBookingRules(): void {
     if (ReservationCard.maxPlayersCache !== null) {
       this.maxPlayers = ReservationCard.maxPlayersCache;
       return;
@@ -118,6 +126,52 @@ export class ReservationCard implements OnInit {
     });
   }
 
+  private loadTimeSlotInfo(): void {
+    const reservation = this.reservations();
+    const cachedTimeSlots = ReservationCard.timeSlotsBySiteCache.get(reservation.siteId);
+
+    if (cachedTimeSlots) {
+      this.applyTimeSlotInfo(cachedTimeSlots);
+      return;
+    }
+
+    this.bookingRuleApiService.getTimeSlotsBySite(reservation.siteId).subscribe({
+      next: timeSlots => {
+        ReservationCard.timeSlotsBySiteCache.set(reservation.siteId, timeSlots);
+        this.applyTimeSlotInfo(timeSlots);
+      },
+      error: error => {
+        console.error('Error loading time slots', error);
+        this.timeSlotLabel = this.getNormalizedStartTime();
+        this.matchEndTime = this.getNormalizedStartTime();
+      }
+    });
+  }
+
+  private applyTimeSlotInfo(timeSlots: TimeSlotDTO[]): void {
+    const startTime = this.getNormalizedStartTime();
+
+    if (!startTime) {
+      this.timeSlotLabel = '';
+      this.matchEndTime = '';
+      return;
+    }
+
+    const matchingTimeSlot = timeSlots.find(slot => slot.startTime.substring(0, 5) === startTime);
+
+    if (!matchingTimeSlot) {
+      this.timeSlotLabel = startTime;
+      this.matchEndTime = startTime;
+      return;
+    }
+
+    const slotStart = matchingTimeSlot.startTime.substring(0, 5);
+    const slotEnd = matchingTimeSlot.endTime.substring(0, 5);
+
+    this.timeSlotLabel = matchingTimeSlot.label || `${slotStart} - ${slotEnd}`;
+    this.matchEndTime = slotEnd;
+  }
+
   getSiteName(): string {
     return this.siteName;
   }
@@ -127,6 +181,10 @@ export class ReservationCard implements OnInit {
   }
 
   isFull(): boolean {
+    if (this.maxPlayers <= 0) {
+      return false;
+    }
+
     return this.getPlayersCount() >= this.maxPlayers;
   }
 
@@ -237,10 +295,18 @@ export class ReservationCard implements OnInit {
   }
 
   getAvailableSeats(): number {
+    if (this.maxPlayers <= 0) {
+      return 0;
+    }
+
     return Math.max(this.maxPlayers - this.getPlayersCount(), 0);
   }
 
   getPlayerSlots(): number[] {
+    if (this.maxPlayers <= 0) {
+      return [];
+    }
+
     return Array.from({ length: this.maxPlayers }, (_, index) => index + 1);
   }
 
@@ -262,21 +328,17 @@ export class ReservationCard implements OnInit {
   }
 
   getTimeLabel(): string {
+    if (this.timeSlotLabel) {
+      return this.timeSlotLabel;
+    }
+
     const startTime = this.getNormalizedStartTime();
 
     if (!startTime) {
       return 'Time not set';
     }
 
-    const [hours, minutes] = startTime.split(':').map(value => Number(value));
-
-    const start = new Date();
-    start.setHours(hours, minutes, 0, 0);
-
-    const end = new Date(start);
-    end.setMinutes(end.getMinutes() + 90);
-
-    return `${this.formatTime(start)} - ${this.formatTime(end)}`;
+    return startTime;
   }
 
   getPriceLabel(): string {
@@ -332,11 +394,11 @@ export class ReservationCard implements OnInit {
       return false;
     }
 
-    const [hours, minutes] = startTime.split(':').map(value => Number(value));
+    const endTime = this.matchEndTime || startTime;
+    const [hours, minutes] = endTime.split(':').map(value => Number(value));
     const matchEnd = new Date(`${dateValue}T00:00:00`);
 
     matchEnd.setHours(hours, minutes, 0, 0);
-    matchEnd.setMinutes(matchEnd.getMinutes() + 90);
 
     return matchEnd.getTime() < Date.now();
   }
@@ -353,13 +415,6 @@ export class ReservationCard implements OnInit {
     }
 
     return time.substring(0, 5);
-  }
-
-  private formatTime(date: Date): string {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-
-    return `${hours}:${minutes}`;
   }
 
   private shortenUuid(value: string): string {
