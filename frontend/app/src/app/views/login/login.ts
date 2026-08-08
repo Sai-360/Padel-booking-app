@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MemberApiService } from '../user/member-api.service';
 import { UserService } from '../user/user.service';
 import { AdminAuthService } from '../../shared/services/admin-auth.service';
+import { Member } from '../../model/Member';
 
 type LoginMode = 'MEMBER' | 'ADMIN';
 
@@ -30,7 +31,7 @@ type LoginMode = 'MEMBER' | 'ADMIN';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class Login {
+export class Login implements OnInit {
 
   private memberApiService = inject(MemberApiService);
   private userService = inject(UserService);
@@ -42,6 +43,10 @@ export class Login {
   loginError = '';
   isSubmitting = false;
 
+  demoMembers: Member[] = [];
+  isLoadingDemoMembers = false;
+  demoMembersError = '';
+
   form = new FormGroup({
     matricule: new FormControl<string>('', {
       nonNullable: true,
@@ -51,6 +56,28 @@ export class Login {
       nonNullable: true
     })
   });
+
+  ngOnInit(): void {
+    this.loadDemoMembers();
+  }
+
+  loadDemoMembers(): void {
+    this.isLoadingDemoMembers = true;
+    this.demoMembersError = '';
+
+    this.memberApiService.getMembers().subscribe({
+      next: members => {
+        this.demoMembers = members;
+        this.isLoadingDemoMembers = false;
+      },
+      error: error => {
+        this.demoMembers = [];
+        this.isLoadingDemoMembers = false;
+        this.demoMembersError = 'Demo accounts could not be loaded from the backend.';
+        console.error(error);
+      }
+    });
+  }
 
   selectLoginMode(mode: LoginMode): void {
     this.loginMode = mode;
@@ -90,31 +117,131 @@ export class Login {
     this.loginAsMember(matricule);
   }
 
-  fillMemberDemo(): void {
-    this.selectLoginMode('MEMBER');
+  selectDemoMember(member: Member): void {
+    const mode: LoginMode = this.isAdminMember(member) ? 'ADMIN' : 'MEMBER';
+
+    this.selectLoginMode(mode);
 
     this.form.patchValue({
-      matricule: 'G0002',
+      matricule: member.matricule,
       password: ''
     });
   }
 
-  fillAdminDemo(): void {
-    this.selectLoginMode('ADMIN');
+  getSortedDemoMembers(): Member[] {
+    return [...this.demoMembers].sort((a, b) => {
+      if (this.isAdminMember(a) && !this.isAdminMember(b)) {
+        return -1;
+      }
 
-    this.form.patchValue({
-      matricule: 'G0001',
-      password: 'admin123'
+      if (!this.isAdminMember(a) && this.isAdminMember(b)) {
+        return 1;
+      }
+
+      return a.matricule.localeCompare(b.matricule);
     });
   }
 
-  fillSiteAdminDemo(): void {
-    this.selectLoginMode('ADMIN');
+  isAdminMember(member: Member): boolean {
+    return !!member.adminRole && member.adminRole !== 'NONE';
+  }
 
-    this.form.patchValue({
-      matricule: 'S0001',
-      password: 'site123'
-    });
+  isBlockedMember(member: Member): boolean {
+    if (!member.blockedUntil) {
+      return false;
+    }
+
+    const today = new Date();
+    const blockedUntil = new Date(`${member.blockedUntil}T00:00:00`);
+
+    today.setHours(0, 0, 0, 0);
+    blockedUntil.setHours(0, 0, 0, 0);
+
+    return blockedUntil.getTime() >= today.getTime();
+  }
+
+  hasUnpaidBalance(member: Member): boolean {
+    return Number(member.unpaidBalance ?? 0) > 0;
+  }
+
+  getDemoMemberIcon(member: Member): string {
+    if (this.isAdminMember(member)) {
+      return 'admin_panel_settings';
+    }
+
+    if (this.isBlockedMember(member)) {
+      return 'block';
+    }
+
+    if (this.hasUnpaidBalance(member)) {
+      return 'warning';
+    }
+
+    if (member.type === 'SITE') {
+      return 'location_on';
+    }
+
+    if (member.type === 'FREE') {
+      return 'sports_tennis';
+    }
+
+    return 'person';
+  }
+
+  getDemoMemberTitle(member: Member): string {
+    if (member.adminRole === 'GLOBAL_ADMIN') {
+      return 'Global admin';
+    }
+
+    if (member.adminRole === 'SITE_ADMIN') {
+      return 'Site admin';
+    }
+
+    if (member.type === 'GLOBAL') {
+      return 'Global member';
+    }
+
+    if (member.type === 'SITE') {
+      return 'Site member';
+    }
+
+    if (member.type === 'FREE') {
+      return 'Free member';
+    }
+
+    return 'Member';
+  }
+
+  getDemoMemberDescription(member: Member): string {
+    if (this.isBlockedMember(member)) {
+      return `Blocked until ${member.blockedUntil}`;
+    }
+
+    if (this.hasUnpaidBalance(member)) {
+      return 'Has an unpaid balance. Useful to test payment blocking.';
+    }
+
+    if (member.adminRole === 'GLOBAL_ADMIN') {
+      return 'Can access the full admin dashboard.';
+    }
+
+    if (member.adminRole === 'SITE_ADMIN') {
+      return 'Can access the site admin dashboard.';
+    }
+
+    if (member.type === 'GLOBAL') {
+      return 'Can book earlier than other member types.';
+    }
+
+    if (member.type === 'SITE') {
+      return 'Can book on its own site.';
+    }
+
+    if (member.type === 'FREE') {
+      return 'Has the shortest booking window.';
+    }
+
+    return 'Regular booking account.';
   }
 
   getModeTitle(): string {
@@ -142,7 +269,6 @@ export class Login {
           next: member => {
             this.isSubmitting = false;
 
-            // Admin connecté + currentUser conservé pour pouvoir aussi créer une réservation.
             this.userService.setCurrentUser(member, false);
             this.router.navigate(['/admin']);
           },
@@ -168,7 +294,7 @@ export class Login {
       next: member => {
         this.isSubmitting = false;
 
-        if (member.adminRole && member.adminRole !== 'NONE') {
+        if (this.isAdminMember(member)) {
           this.loginError = 'Admin accounts must use the admin login mode with a password.';
           return;
         }

@@ -45,51 +45,27 @@
     </div>
 
     <div class="filter-tabs">
-      <button
-        type="button"
-        [class.active]="selectedFilter === 'ALL'"
-        (click)="setFilter('ALL')"
-      >
+      <button type="button" [class.active]="selectedFilter === 'ALL'" (click)="setFilter('ALL')">
         All
       </button>
 
-      <button
-        type="button"
-        [class.active]="selectedFilter === 'UPCOMING'"
-        (click)="setFilter('UPCOMING')"
-      >
+      <button type="button" [class.active]="selectedFilter === 'UPCOMING'" (click)="setFilter('UPCOMING')">
         Upcoming
       </button>
 
-      <button
-        type="button"
-        [class.active]="selectedFilter === 'PAST'"
-        (click)="setFilter('PAST')"
-      >
+      <button type="button" [class.active]="selectedFilter === 'PAST'" (click)="setFilter('PAST')">
         Past
       </button>
 
-      <button
-        type="button"
-        [class.active]="selectedFilter === 'ORGANIZER'"
-        (click)="setFilter('ORGANIZER')"
-      >
+      <button type="button" [class.active]="selectedFilter === 'ORGANIZER'" (click)="setFilter('ORGANIZER')">
         Organizer
       </button>
 
-      <button
-        type="button"
-        [class.active]="selectedFilter === 'JOINED'"
-        (click)="setFilter('JOINED')"
-      >
+      <button type="button" [class.active]="selectedFilter === 'JOINED'" (click)="setFilter('JOINED')">
         Joined
       </button>
 
-      <button
-        type="button"
-        [class.active]="selectedFilter === 'PRIVATE'"
-        (click)="setFilter('PRIVATE')"
-      >
+      <button type="button" [class.active]="selectedFilter === 'PRIVATE'" (click)="setFilter('PRIVATE')">
         Private
       </button>
     </div>
@@ -136,7 +112,7 @@
                     <span class="private-kicker">Private invitation</span>
                     <h3>Add a player</h3>
                     <p>
-                      Invite players by matricule. The organizer is already included in the match.
+                      Invite players from the backend member list. The organizer is already included in the match.
                     </p>
                   </div>
                 </div>
@@ -169,6 +145,55 @@
               </div>
 
               @if (canAddPrivatePlayer(reservation)) {
+
+                <div class="quick-players-panel">
+                  <div class="quick-players-header">
+                    <div>
+                      <strong>Available members</strong>
+                      <span>Members are loaded from the backend, not hardcoded in Angular.</span>
+                    </div>
+
+                    <button type="button" class="quick-refresh" (click)="loadMembers()">
+                      <mat-icon>refresh</mat-icon>
+                    </button>
+                  </div>
+
+                  @if (isLoadingMembers) {
+                    <div class="quick-state">
+                      Loading members...
+                    </div>
+                  } @else if (membersError) {
+                    <div class="quick-state error">
+                      {{ membersError }}
+                    </div>
+                  } @else {
+                    <div class="quick-players-grid">
+                      @for (member of getSelectableMembers(reservation); track member.id) {
+                        <button
+                          type="button"
+                          class="quick-player-card"
+                          [class.warning]="member.unpaidBalance > 0"
+                          [class.admin]="member.adminRole && member.adminRole !== 'NONE'"
+                          [disabled]="privatePlayersLoading[reservation.id]"
+                          (click)="quickAddPrivatePlayer(reservation.id, member)"
+                        >
+                          <strong>{{ member.matricule }}</strong>
+                          <span>{{ member.name }}</span>
+                          <small>{{ getMemberTypeLabel(member) }} · {{ getMemberStatusLabel(member) }}</small>
+                        </button>
+                      } @empty {
+                        <div class="quick-state">
+                          No available member found.
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="manual-invite-label">
+                  Or enter a matricule manually
+                </div>
+
                 <div class="private-invite-form">
 
                   <mat-form-field appearance="outline">
@@ -176,15 +201,20 @@
                     <input
                       matInput
                       [(ngModel)]="privatePlayersForms[reservation.id]"
-                      placeholder="e.g. G0002">
+                      placeholder="Select a member or type a matricule">
                   </mat-form-field>
 
                   <button
                     mat-raised-button
                     color="primary"
                     type="button"
+                    [disabled]="privatePlayersLoading[reservation.id]"
                     (click)="addPrivatePlayers(reservation.id)">
-                    Add player
+                    @if (privatePlayersLoading[reservation.id]) {
+                      Adding...
+                    } @else {
+                      Add player
+                    }
                   </button>
 
                 </div>

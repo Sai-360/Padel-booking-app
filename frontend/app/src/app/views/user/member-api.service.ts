@@ -11,6 +11,10 @@ export class MemberApiService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:8080/members';
 
+  getMembers(): Observable<Member[]> {
+    return this.http.get<Member[]>(this.apiUrl);
+  }
+
   getMemberByMatricule(matricule: string): Observable<Member> {
     return this.http.get<Member>(`${this.apiUrl}/${matricule}`);
   }

@@ -69,7 +69,7 @@
               matInput
               formControlName="matricule"
               autocomplete="username"
-              placeholder="e.g. G0002"
+              placeholder="Choose a backend account below"
             >
 
             @if (form.get('matricule')?.hasError('required') && form.get('matricule')?.touched) {
@@ -117,24 +117,55 @@
         </form>
 
         <div class="demo-box">
-          <div>
-            <strong>Demo accounts</strong>
-            <span>Useful for the project presentation.</span>
-          </div>
+          <div class="demo-header">
+            <div>
+              <strong>Backend accounts</strong>
+              <span>Loaded from the backend seed data. Click a member to fill the matricule.</span>
+            </div>
 
-          <div class="demo-actions">
-            <button type="button" (click)="fillMemberDemo()">
-              G0002
-            </button>
-
-            <button type="button" (click)="fillAdminDemo()">
-              G0001 admin
-            </button>
-
-            <button type="button" (click)="fillSiteAdminDemo()">
-              S0001 site admin
+            <button type="button" class="demo-refresh" (click)="loadDemoMembers()">
+              <mat-icon>refresh</mat-icon>
             </button>
           </div>
+
+          @if (isLoadingDemoMembers) {
+            <div class="demo-state">
+              Loading backend members...
+            </div>
+          } @else if (demoMembersError) {
+            <div class="demo-state error">
+              {{ demoMembersError }}
+            </div>
+          } @else {
+            <div class="demo-account-grid">
+              @for (member of getSortedDemoMembers(); track member.id) {
+                <button
+                  type="button"
+                  class="demo-account-card"
+                  [class.admin-account]="isAdminMember(member)"
+                  [class.warning-account]="hasUnpaidBalance(member)"
+                  [class.blocked-account]="isBlockedMember(member)"
+                  (click)="selectDemoMember(member)"
+                >
+                  <span class="demo-account-icon">
+                    <mat-icon>{{ getDemoMemberIcon(member) }}</mat-icon>
+                  </span>
+
+                  <span class="demo-account-content">
+                    <strong>{{ getDemoMemberTitle(member) }}</strong>
+                    <span class="demo-matricule">{{ member.matricule }} · {{ member.name }}</span>
+                    <small>{{ getDemoMemberDescription(member) }}</small>
+
+                    @if (isAdminMember(member)) {
+                      <em>Admin password required</em>
+                    } @else {
+                      <em>No password required</em>
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+          }
         </div>
 
       </mat-card-content>
